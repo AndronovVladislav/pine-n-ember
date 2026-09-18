@@ -48,3 +48,5 @@ services:
 
 volumes:
   pgdata:
+    external: true
+    name: my-tracker_pgdata

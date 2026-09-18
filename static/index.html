@@ -14,7 +14,7 @@
 
 <div id="toast" class="toast hidden" role="alert"></div>
 
-<header id="board-view">
+<header id="app-header">
     <div class="header">
         <div>
             <h1>Pine &amp; Ember</h1>
@@ -25,17 +25,25 @@
             </nav>
         </div>
         <div class="header-actions">
-            <div class="align-control" role="group" aria-label="Выравнивание колонок">
-                <button class="align-btn" data-align="left" title="По левому краю" onclick="setBoardAlign('left')">
+            <div class="align-control" id="align-control" role="group" aria-label="Выравнивание">
+                <button class="align-btn" data-align="left" title="По левому краю" onclick="setAlign('left')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg>
                 </button>
-                <button class="align-btn" data-align="center" title="По центру" onclick="setBoardAlign('center')">
+                <button class="align-btn" data-align="center" title="По центру" onclick="setAlign('center')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M5.5 18h13"/></svg>
                 </button>
-                <button class="align-btn" data-align="right" title="По правому краю" onclick="setBoardAlign('right')">
+                <button class="align-btn" data-align="right" title="По правому краю" onclick="setAlign('right')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M10 12h10M7 18h13"/></svg>
                 </button>
             </div>
+        </div>
+    </div>
+</header>
+
+<section id="board-view">
+    <div class="header">
+        <div></div>
+        <div class="header-actions">
             <button class="add-btn" onclick="openModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 5v14M5 12h14"/>
@@ -46,27 +54,28 @@
     </div>
 
     <div class="board" id="board"></div>
-</header>
+</section>
 
 <section id="knowledge-view" class="hidden">
     <div class="header">
-        <div>
-            <h1>Pine &amp; Ember</h1>
-            <p id="knowledge-subtitle"></p>
-            <nav class="tabs">
-                <a class="tab" id="tab-board-2" href="#">Доска</a>
-                <a class="tab active" id="tab-knowledge-2" href="#/knowledge">База знаний</a>
-            </nav>
+        <div></div>
+        <div class="header-actions">
+            <button class="btn" onclick="openBlockModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Новый блок
+            </button>
+            <button class="add-btn" onclick="openTopicModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Новая тема
+            </button>
         </div>
-        <button class="add-btn" onclick="openEntityModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Новый скилл
-        </button>
     </div>
 
-    <div class="entities-grid" id="entities-grid"></div>
+    <div id="knowledge-content"></div>
 </section>
 
 <section id="detail-view" class="hidden">
@@ -107,38 +116,58 @@
     </div>
 </div>
 
-<div class="overlay" id="entity-overlay">
+<div class="overlay" id="topic-overlay">
     <div class="modal">
-        <h3 id="entity-modal-title">Новый скилл</h3>
+        <h3 id="topic-modal-title">Новая тема</h3>
         <div class="field">
             <label>Название</label>
-            <input type="text" id="input-entity-name" placeholder="Например: git-helper">
+            <input type="text" id="input-topic-name" placeholder="Например: API">
         </div>
         <div class="field">
             <label>Описание</label>
-            <input type="text" id="input-entity-description" placeholder="Коротко, для чего этот скилл">
+            <input type="text" id="input-topic-description" placeholder="Коротко, о чём эта тема">
+        </div>
+        <div class="field">
+            <label>Блок</label>
+            <select id="input-topic-block">
+                <option value="">без блока</option>
+            </select>
         </div>
         <div class="modal-actions">
-            <button class="btn" onclick="closeEntityModal()">Отмена</button>
-            <button class="btn primary" id="entity-submit-btn" onclick="addEntity()">Добавить</button>
+            <button class="btn" onclick="closeTopicModal()">Отмена</button>
+            <button class="btn primary" id="topic-submit-btn" onclick="addTopic()">Добавить</button>
         </div>
     </div>
 </div>
 
-<div class="overlay" id="item-overlay">
+<div class="overlay" id="concept-overlay">
     <div class="modal">
-        <h3 id="item-modal-title">Новая команда</h3>
+        <h3 id="concept-modal-title">Новое понятие</h3>
         <div class="field">
             <label>Название</label>
-            <input type="text" id="input-item-name" placeholder="Например: /commit">
+            <input type="text" id="input-concept-name" placeholder="Например: Definition">
         </div>
         <div class="field">
             <label>Описание</label>
-            <input type="text" id="input-item-description" placeholder="Что делает эта команда">
+            <input type="text" id="input-concept-description" placeholder="Коротко, что это за понятие">
         </div>
         <div class="modal-actions">
-            <button class="btn" onclick="closeItemModal()">Отмена</button>
-            <button class="btn primary" id="item-submit-btn" onclick="addItem()">Добавить</button>
+            <button class="btn" onclick="closeConceptModal()">Отмена</button>
+            <button class="btn primary" id="concept-submit-btn" onclick="addConcept()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="block-overlay">
+    <div class="modal">
+        <h3 id="block-modal-title">Новый блок</h3>
+        <div class="field">
+            <label>Название</label>
+            <input type="text" id="input-block-name" placeholder="Например: Backend">
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeBlockModal()">Отмена</button>
+            <button class="btn primary" id="block-submit-btn" onclick="addBlock()">Добавить</button>
         </div>
     </div>
 </div>

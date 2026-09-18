@@ -32,23 +32,30 @@ tasks = Table(
     Column('position', Integer, nullable=False, server_default='0'),
 )
 
-entities = Table(
-    'entities',
+blocks = Table(
+    'blocks',
     metadata,
     Column('id', Text, primary_key=True),
-    Column('kind', Text, nullable=False, server_default='skill'),
+    Column('name', Text, nullable=False),
+    Column('position', Integer, nullable=False, server_default='0'),
+)
+
+topics = Table(
+    'topics',
+    metadata,
+    Column('id', Text, primary_key=True),
+    Column('block_id', Text, ForeignKey('blocks.id', ondelete='SET NULL')),
     Column('name', Text, nullable=False),
     Column('description', Text, server_default=''),
     Column('position', Integer, nullable=False, server_default='0'),
     Column('metadata', Text, nullable=False, server_default='{}'),
 )
 
-entity_items = Table(
-    'entity_items',
+concepts = Table(
+    'concepts',
     metadata,
     Column('id', Text, primary_key=True),
-    Column('entity_id', Text, ForeignKey('entities.id', ondelete='CASCADE'), nullable=False),
-    Column('kind', Text, nullable=False, server_default='command'),
+    Column('topic_id', Text, ForeignKey('topics.id', ondelete='CASCADE'), nullable=False),
     Column('name', Text, nullable=False),
     Column('description', Text, server_default=''),
     Column('position', Integer, nullable=False, server_default='0'),

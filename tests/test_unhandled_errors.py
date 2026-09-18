@@ -13,7 +13,7 @@ class TestUnhandledExceptionHandler:
         а не ожидаемая 4xx-ошибка валидации) не роняет процесс и не отдаёт клиенту traceback
         или текст оригинального исключения.
 
-        Ожидание: POST /api/entities -> 500, тело ответа не содержит текст оригинальной ошибки
+        Ожидание: POST /api/topics -> 500, тело ответа не содержит текст оригинальной ошибки
         ("boom from gen_id"), сервер остаётся отвечать на следующий запрос
         """
         client = client_allow_server_errors
@@ -23,7 +23,7 @@ class TestUnhandledExceptionHandler:
 
         monkeypatch.setattr(api_module, 'gen_id', broken_gen_id)
 
-        response = client.post('/api/entities', json={'name': 'git-helper'})
+        response = client.post('/api/topics', json={'name': 'git-helper'})
 
         assert response.status_code == 500
         assert 'boom from gen_id' not in response.text

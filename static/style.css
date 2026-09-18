@@ -40,7 +40,7 @@ body {
     position: relative;
 }
 
-#board-view, #knowledge-view, #detail-view {
+#app-header, #board-view, #knowledge-view, #detail-view {
     max-width: var(--content-width);
     margin: 0 auto;
 }
@@ -61,7 +61,7 @@ body::before {
     z-index: 0;
 }
 
-.header, .board, #detail-view, #knowledge-view, .entities-grid {
+.header, .board, #detail-view, #knowledge-view, .topics-grid {
     position: relative;
     z-index: 1;
 }
@@ -181,7 +181,7 @@ body::before {
 .tab:focus-visible,
 .btn:focus-visible,
 .card-delete:focus-visible,
-.entity-add-item:focus-visible,
+.topic-add-concept:focus-visible,
 .align-btn:focus-visible,
 .back-link:focus-visible {
     outline: none;
@@ -392,96 +392,216 @@ body::before {
     padding: 8px 2px;
 }
 
-.entities-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
+.block-section {
+    margin-bottom: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
 }
 
-.entity-card {
+.block-section:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.block-section.dragging-block {
+    opacity: 0.4;
+}
+
+.block-section.drag-over {
+    outline: 1px dashed var(--border-strong);
+    outline-offset: 6px;
+    border-radius: var(--radius);
+}
+
+.block-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.block-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: grab;
+}
+
+.block-section-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+}
+
+.block-section-dot.muted {
+    background: var(--text-muted);
+}
+
+.block-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.block-section-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.block-section-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    visibility: hidden;
+}
+
+.block-section-head:hover .block-section-actions {
+    visibility: visible;
+}
+
+.topics-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: flex-start;
+}
+
+.topics-grid.align-left {
+    justify-content: flex-start;
+}
+
+.topics-grid.align-center {
+    justify-content: center;
+}
+
+.topics-grid.align-right {
+    justify-content: flex-end;
+}
+
+.topic-card {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 16px;
+    flex: 0 0 calc((100% - 32px) / 3);
+    width: calc((100% - 32px) / 3);
+    transition: border-color 0.15s, opacity 0.15s;
     animation: card-in 0.2s ease;
 }
 
-.entity-card-head {
+.topic-card.dragging {
+    opacity: 0.4;
+}
+
+.topic-card.drag-over {
+    border-color: var(--border-strong);
+}
+
+.topic-card.drop-before {
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.topic-card.drop-after {
+    box-shadow: inset -3px 0 0 var(--accent);
+}
+
+.topic-card-head {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
 }
 
-.entity-card-actions {
+.topic-card-actions {
     display: flex;
     gap: 4px;
     flex-shrink: 0;
 }
 
-.entity-card-head .card-delete {
+.topic-card-head .card-delete {
     visibility: hidden;
 }
 
-.entity-card:hover .card-delete {
+.topic-card:hover .card-delete {
     visibility: visible;
 }
 
-.entity-card-title {
+.topic-card-title {
     font-size: 14px;
     font-weight: 600;
     margin: 0;
 }
 
-.entity-card-desc {
+.topic-card-desc {
     font-size: 12.5px;
     color: var(--text-secondary);
     margin: 6px 0 0;
     line-height: 1.4;
 }
 
-.entity-items {
+.topic-concepts {
     display: flex;
     flex-direction: column;
     gap: 6px;
     margin: 14px 0 10px;
 }
 
-.entity-item-row {
+.concept-row {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 8px 10px;
+    transition: opacity 0.15s;
 }
 
-.entity-item-head {
+.concept-row.dragging {
+    opacity: 0.4;
+}
+
+.concept-row.drop-before {
+    box-shadow: inset 0 3px 0 var(--accent);
+}
+
+.concept-row.drop-after {
+    box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.concept-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
 }
 
-.entity-item-head .card-delete {
+.concept-head .card-delete {
     visibility: hidden;
 }
 
-.entity-item-row:hover .card-delete {
+.concept-row:hover .card-delete {
     visibility: visible;
 }
 
-.entity-item-name {
+.concept-name {
     font-size: 13px;
     font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
 }
 
-.entity-item-desc {
+.concept-desc {
     font-size: 12px;
     color: var(--text-secondary);
     margin: 6px 0 0;
     line-height: 1.4;
 }
 
-.entity-add-item {
+.topic-add-concept {
     background: none;
     border: 1px dashed var(--border-strong);
     color: var(--text-secondary);
@@ -492,12 +612,12 @@ body::before {
     width: 100%;
 }
 
-.entity-add-item:hover {
+.topic-add-concept:hover {
     color: var(--text);
     border-color: var(--text-secondary);
 }
 
-.entity-add-item:active {
+.topic-add-concept:active {
     transform: scale(0.98);
 }
 
@@ -568,6 +688,9 @@ body::before {
 }
 
 .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 8px 14px;
     border-radius: 8px;
     font-size: 13px;
@@ -575,6 +698,12 @@ body::before {
     border: 1px solid var(--border-strong);
     background: transparent;
     color: var(--text);
+}
+
+.btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
 }
 
 .btn.primary {

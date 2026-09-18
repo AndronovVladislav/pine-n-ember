@@ -3,7 +3,7 @@ import random
 import re
 import string
 
-from sqlalchemy import Connection, Row, func, insert, select
+from sqlalchemy import Column, Connection, Row, Table, func, insert, select, update
 
 from app.tables import statuses, tags
 
@@ -81,25 +81,55 @@ def task_row_to_dict(row: Row) -> dict:
     }
 
 
-def entity_row_to_dict(row: Row, items: list[dict] | None = None) -> dict:
+def topic_row_to_dict(row: Row, concepts: list[dict] | None = None) -> dict:
     m = row._mapping
     return {
         'id': m['id'],
-        'kind': m['kind'],
+        'block_id': m['block_id'],
         'name': m['name'],
         'description': m['description'] or '',
         'metadata': json.loads(m['metadata'] or '{}'),
-        'items': items if items is not None else [],
+        'concepts': concepts if concepts is not None else [],
     }
 
 
-def entity_item_row_to_dict(row: Row) -> dict:
+def concept_row_to_dict(row: Row) -> dict:
     m = row._mapping
     return {
         'id': m['id'],
-        'entity_id': m['entity_id'],
-        'kind': m['kind'],
+        'topic_id': m['topic_id'],
         'name': m['name'],
         'description': m['description'] or '',
         'metadata': json.loads(m['metadata'] or '{}'),
     }
+
+
+def block_row_to_dict(row: Row) -> dict:
+    m = row._mapping
+    return {
+        'id': m['id'],
+        'name': m['name'],
+        'position': m['position'],
+    }
+
+
+def reposition_in_parent(
+    conn: Connection,
+    table: Table,
+    parent_col: Column,
+    item_id: str,
+    parent_value: str | None,
+    index: int,
+) -> int:
+    """Вставляет item_id в упорядоченный список "соседей" (той же parent_col) на позицию index,
+    сдвигая позиции остальных, и возвращает итоговую (зажатую в границы списка) позицию."""
+    where = parent_col.is_(None) if parent_value is None else parent_col == parent_value
+    siblings = [
+        r.id for r in conn.execute(select(table.c.id).where(where, table.c.id != item_id).order_by(table.c.position))
+    ]
+    index = max(0, min(index, len(siblings)))
+    siblings.insert(index, item_id)
+    for position, sibling_id in enumerate(siblings):
+        if sibling_id != item_id:
+            conn.execute(update(table).where(table.c.id == sibling_id).values(position=position))
+    return index

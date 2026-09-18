@@ -46,41 +46,61 @@ class TaskMove(BaseModel):
     status: str
 
 
-class EntityItemOut(BaseModel):
+class ConceptOut(BaseModel):
     id: str
-    entity_id: str
-    kind: str
+    topic_id: str
     name: str
     description: str
     metadata: dict
 
 
-class EntityItemCreate(BaseModel):
+class ConceptCreate(BaseModel):
     name: str
     description: str = ''
-    kind: str = 'command'
 
 
-class EntityItemUpdate(BaseModel):
+class ConceptUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    topic_id: str | None = None
+    position: int | None = None
 
 
-class EntityOut(BaseModel):
+class TopicOut(BaseModel):
     id: str
-    kind: str
+    block_id: str | None
     name: str
     description: str
     metadata: dict
-    items: list[EntityItemOut] = []
+    concepts: list[ConceptOut] = []
 
 
-class EntityCreate(BaseModel):
+class TopicCreate(BaseModel):
     name: str
     description: str = ''
-    kind: str = 'skill'
+    block_id: str | None = None
 
 
-class EntityUpdate(BaseModel):
+class TopicUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    block_id: str | None = None
+    position: int | None = None
+
+
+class BlockOut(BaseModel):
+    id: str
+    name: str
+    position: int
+
+
+class BlockCreate(BaseModel):
+    name: str
+
+
+class BlockUpdate(BaseModel):
+    name: str | None = None
+
+
+class BlockReorder(BaseModel):
+    keys: list[str]

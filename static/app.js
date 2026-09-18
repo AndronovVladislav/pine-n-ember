@@ -14,30 +14,44 @@ let STATUSES = [];
 let TAGS = [];
 let tasks = [];
 
-function getBoardAlign() {
+function currentAlignTarget() {
+    return location.hash === '#/knowledge' ? 'knowledge' : 'board';
+}
+
+function getAlign(target) {
     try {
-        return localStorage.getItem('boardAlign') || 'left';
+        return localStorage.getItem(target + 'Align') || 'left';
     } catch {
         return 'left';
     }
 }
 
-function applyBoardAlign(align) {
-    const board = document.getElementById('board');
-    board.classList.remove('align-left', 'align-center', 'align-right');
-    board.classList.add('align-' + align);
-    document.querySelectorAll('.align-btn').forEach(btn => {
+function applyAlign() {
+    const target = currentAlignTarget();
+    const align = getAlign(target);
+    if (target === 'board') {
+        const board = document.getElementById('board');
+        board.classList.remove('align-left', 'align-center', 'align-right');
+        board.classList.add('align-' + align);
+    } else {
+        document.querySelectorAll('.topics-grid').forEach(grid => {
+            grid.classList.remove('align-left', 'align-center', 'align-right');
+            grid.classList.add('align-' + align);
+        });
+    }
+    document.querySelectorAll('#align-control .align-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.align === align);
     });
 }
 
-function setBoardAlign(align) {
+function setAlign(align) {
+    const target = currentAlignTarget();
     try {
-        localStorage.setItem('boardAlign', align);
+        localStorage.setItem(target + 'Align', align);
     } catch {
         /* localStorage недоступен, выравнивание просто не сохранится */
     }
-    applyBoardAlign(align);
+    applyAlign();
 }
 
 const COLUMN_WIDTH = 240;
@@ -119,7 +133,7 @@ function render() {
     const board = document.getElementById('board');
     board.innerHTML = '';
     fitBoardWidth();
-    applyBoardAlign(getBoardAlign());
+    applyAlign();
     document.getElementById('subtitle').textContent = tasks.length + ' задач';
     populateDatalists();
 
@@ -422,70 +436,148 @@ async function deleteTaskFromDetail(taskId) {
     }
 }
 
-let entities = [];
+let knowledgeBlocks = [];
+let ungroupedTopics = [];
+
+function allTopics() {
+    return knowledgeBlocks.flatMap(b => b.topics).concat(ungroupedTopics);
+}
 
 async function loadKnowledge() {
     const data = await api('/knowledge');
-    entities = data.entities;
+    knowledgeBlocks = data.blocks;
+    ungroupedTopics = data.topics;
+}
+
+function renderTopicCard(topic) {
+    const card = document.createElement('div');
+    card.className = 'topic-card';
+    card.draggable = true;
+    card.dataset.topicId = topic.id;
+    card.addEventListener('dragstart', onTopicDragStart);
+    card.addEventListener('dragend', onTopicDragEnd);
+    card.addEventListener('dragover', onTopicDragOver);
+    card.addEventListener('dragleave', onTopicDragLeave);
+    card.addEventListener('drop', onTopicDrop);
+    card.innerHTML = `
+      <div class="topic-card-head">
+        <p class="topic-card-title">${escapeHtml(topic.name)}</p>
+        <div class="topic-card-actions">
+          <button class="card-delete" title="Редактировать тему" onclick="openTopicModal('${topic.id}')">${editIcon(13)}</button>
+          <button class="card-delete" title="Удалить тему" onclick="deleteTopic('${topic.id}')">${trashIcon(13)}</button>
+        </div>
+      </div>
+      ${topic.description ? `<p class="topic-card-desc">${escapeHtml(topic.description)}</p>` : ''}
+      <div class="topic-concepts" id="topic-concepts-${topic.id}"></div>
+      <button class="topic-add-concept" onclick="openConceptModal('${topic.id}')">+ понятие</button>
+    `;
+    const conceptsWrap = card.querySelector('.topic-concepts');
+    if (topic.concepts.length === 0) {
+        const hint = document.createElement('div');
+        hint.className = 'empty-hint';
+        hint.textContent = 'пока нет понятий';
+        conceptsWrap.appendChild(hint);
+    }
+    topic.concepts.forEach(concept => {
+        const row = document.createElement('div');
+        row.className = 'concept-row';
+        row.draggable = true;
+        row.dataset.conceptId = concept.id;
+        row.addEventListener('dragstart', onConceptDragStart);
+        row.addEventListener('dragend', onConceptDragEnd);
+        row.addEventListener('dragover', onConceptRowDragOver);
+        row.addEventListener('dragleave', onConceptRowDragLeave);
+        row.addEventListener('drop', onConceptRowDrop);
+        row.innerHTML = `
+        <div class="concept-head">
+          <span class="concept-name">${escapeHtml(concept.name)}</span>
+          <div class="topic-card-actions">
+            <button class="card-delete" title="Редактировать понятие" onclick="event.stopPropagation(); openConceptModal('${topic.id}', '${concept.id}')">${editIcon(12)}</button>
+            <button class="card-delete" title="Удалить понятие" onclick="event.stopPropagation(); deleteConcept('${concept.id}')">${trashIcon(12)}</button>
+          </div>
+        </div>
+        <p class="concept-desc" hidden>${escapeHtml(concept.description || 'без описания')}</p>
+      `;
+        row.querySelector('.concept-head').addEventListener('click', () => {
+            row.querySelector('.concept-desc').hidden = !row.querySelector('.concept-desc').hidden;
+        });
+        conceptsWrap.appendChild(row);
+    });
+    return card;
 }
 
 function renderKnowledge() {
-    const grid = document.getElementById('entities-grid');
-    grid.innerHTML = '';
-    const commandCount = entities.reduce((sum, e) => sum + e.items.length, 0);
-    document.getElementById('knowledge-subtitle').textContent =
-        entities.length + ' скиллов, ' + commandCount + ' команд';
+    const content = document.getElementById('knowledge-content');
+    content.innerHTML = '';
+    const topicCount = allTopics().length;
+    const conceptCount = allTopics().reduce((sum, t) => sum + t.concepts.length, 0);
+    document.getElementById('subtitle').textContent = topicCount + ' тем, ' + conceptCount + ' понятий';
 
-    if (entities.length === 0) {
+    if (topicCount === 0 && knowledgeBlocks.length === 0) {
         const hint = document.createElement('div');
         hint.className = 'empty-hint';
-        hint.textContent = 'пока нет скиллов — добавь первый';
-        grid.appendChild(hint);
+        hint.textContent = 'пока нет тем — добавь первую';
+        content.appendChild(hint);
         return;
     }
 
-    entities.forEach(entity => {
-        const card = document.createElement('div');
-        card.className = 'entity-card';
-        card.innerHTML = `
-      <div class="entity-card-head">
-        <p class="entity-card-title">${escapeHtml(entity.name)}</p>
-        <div class="entity-card-actions">
-          <button class="card-delete" title="Редактировать скилл" onclick="openEntityModal('${entity.id}')">${editIcon(13)}</button>
-          <button class="card-delete" title="Удалить скилл" onclick="deleteEntity('${entity.id}')">${trashIcon(13)}</button>
+    knowledgeBlocks.forEach(block => {
+        const section = document.createElement('div');
+        section.className = 'block-section';
+        section.dataset.blockId = block.id;
+        section.innerHTML = `
+      <div class="block-section-head">
+        <div class="block-section-heading" draggable="true">
+          <span class="block-section-dot"></span>
+          <p class="block-section-title">${escapeHtml(block.name)}</p>
+          <span class="block-section-count">${block.topics.length}</span>
+        </div>
+        <div class="block-section-actions">
+          <button class="card-delete" title="Переименовать блок" onclick="openBlockModal('${block.id}')">${editIcon(13)}</button>
+          <button class="card-delete" title="Удалить блок" onclick="deleteBlock('${block.id}')">${trashIcon(13)}</button>
         </div>
       </div>
-      ${entity.description ? `<p class="entity-card-desc">${escapeHtml(entity.description)}</p>` : ''}
-      <div class="entity-items" id="entity-items-${entity.id}"></div>
-      <button class="entity-add-item" onclick="openItemModal('${entity.id}')">+ команда</button>
+      <div class="topics-grid"></div>
     `;
-        const itemsWrap = card.querySelector('.entity-items');
-        if (entity.items.length === 0) {
+        section.querySelector('.block-section-heading').addEventListener('dragstart', onBlockDragStart);
+        section.querySelector('.block-section-heading').addEventListener('dragend', onBlockDragEnd);
+        section.addEventListener('dragover', onBlockSectionDragOver);
+        section.addEventListener('dragleave', onBlockSectionDragLeave);
+        section.addEventListener('drop', onBlockSectionDrop);
+        const grid = section.querySelector('.topics-grid');
+        if (block.topics.length === 0) {
             const hint = document.createElement('div');
             hint.className = 'empty-hint';
-            hint.textContent = 'пока нет команд';
-            itemsWrap.appendChild(hint);
+            hint.textContent = 'пока нет тем в этом блоке';
+            grid.appendChild(hint);
         }
-        entity.items.forEach(item => {
-            const row = document.createElement('div');
-            row.className = 'entity-item-row';
-            row.innerHTML = `
-        <div class="entity-item-head">
-          <span class="entity-item-name">${escapeHtml(item.name)}</span>
-          <div class="entity-card-actions">
-            <button class="card-delete" title="Редактировать команду" onclick="event.stopPropagation(); openItemModal('${entity.id}', '${item.id}')">${editIcon(12)}</button>
-            <button class="card-delete" title="Удалить команду" onclick="event.stopPropagation(); deleteItem('${item.id}')">${trashIcon(12)}</button>
-          </div>
-        </div>
-        <p class="entity-item-desc" hidden>${escapeHtml(item.description || 'без описания')}</p>
-      `;
-            row.querySelector('.entity-item-head').addEventListener('click', () => {
-                row.querySelector('.entity-item-desc').hidden = !row.querySelector('.entity-item-desc').hidden;
-            });
-            itemsWrap.appendChild(row);
-        });
-        grid.appendChild(card);
+        block.topics.forEach(topic => grid.appendChild(renderTopicCard(topic)));
+        content.appendChild(section);
     });
+
+    if (ungroupedTopics.length > 0) {
+        const section = document.createElement('div');
+        section.className = 'block-section';
+        section.dataset.blockId = '';
+        section.innerHTML = `
+      <div class="block-section-head">
+        <div class="block-section-heading">
+          <span class="block-section-dot muted"></span>
+          <p class="block-section-title">Без блока</p>
+          <span class="block-section-count">${ungroupedTopics.length}</span>
+        </div>
+      </div>
+      <div class="topics-grid"></div>
+    `;
+        section.addEventListener('dragover', onBlockSectionDragOver);
+        section.addEventListener('dragleave', onBlockSectionDragLeave);
+        section.addEventListener('drop', onBlockSectionDrop);
+        const grid = section.querySelector('.topics-grid');
+        ungroupedTopics.forEach(topic => grid.appendChild(renderTopicCard(topic)));
+        content.appendChild(section);
+    }
+
+    applyAlign();
 }
 
 async function refreshKnowledge() {
@@ -493,48 +585,62 @@ async function refreshKnowledge() {
     renderKnowledge();
 }
 
-let editingEntityId = null;
+let editingTopicId = null;
 
-function openEntityModal(entityId) {
-    editingEntityId = entityId || null;
-    const entity = editingEntityId ? entities.find(e => e.id === editingEntityId) : null;
-    document.getElementById('entity-modal-title').textContent = entity ? 'Редактировать скилл' : 'Новый скилл';
-    document.getElementById('entity-submit-btn').textContent = entity ? 'Сохранить' : 'Добавить';
-    document.getElementById('input-entity-name').value = entity ? entity.name : '';
-    document.getElementById('input-entity-description').value = entity ? entity.description : '';
-    document.getElementById('entity-overlay').classList.add('open');
-    document.getElementById('input-entity-name').focus();
+function fillBlockSelect(selectedBlockId) {
+    const select = document.getElementById('input-topic-block');
+    select.innerHTML = '<option value="">без блока</option>';
+    knowledgeBlocks.forEach(block => {
+        const option = document.createElement('option');
+        option.value = block.id;
+        option.textContent = block.name;
+        if (block.id === selectedBlockId) option.selected = true;
+        select.appendChild(option);
+    });
 }
 
-function closeEntityModal() {
-    editingEntityId = null;
-    document.getElementById('entity-overlay').classList.remove('open');
-    document.getElementById('input-entity-name').value = '';
-    document.getElementById('input-entity-description').value = '';
+function openTopicModal(topicId) {
+    editingTopicId = topicId || null;
+    const topic = editingTopicId ? allTopics().find(t => t.id === editingTopicId) : null;
+    document.getElementById('topic-modal-title').textContent = topic ? 'Редактировать тему' : 'Новая тема';
+    document.getElementById('topic-submit-btn').textContent = topic ? 'Сохранить' : 'Добавить';
+    document.getElementById('input-topic-name').value = topic ? topic.name : '';
+    document.getElementById('input-topic-description').value = topic ? topic.description : '';
+    fillBlockSelect(topic ? topic.block_id : null);
+    document.getElementById('topic-overlay').classList.add('open');
+    document.getElementById('input-topic-name').focus();
 }
 
-async function addEntity() {
-    const name = document.getElementById('input-entity-name').value.trim();
+function closeTopicModal() {
+    editingTopicId = null;
+    document.getElementById('topic-overlay').classList.remove('open');
+    document.getElementById('input-topic-name').value = '';
+    document.getElementById('input-topic-description').value = '';
+}
+
+async function addTopic() {
+    const name = document.getElementById('input-topic-name').value.trim();
     if (!name) return;
-    const description = document.getElementById('input-entity-description').value.trim();
+    const description = document.getElementById('input-topic-description').value.trim();
+    const block_id = document.getElementById('input-topic-block').value || null;
     try {
-        if (editingEntityId) {
-            await api(`/entities/${editingEntityId}`, {method: 'PATCH', body: JSON.stringify({name, description})});
+        if (editingTopicId) {
+            await api(`/topics/${editingTopicId}`, {method: 'PATCH', body: JSON.stringify({name, description, block_id})});
         } else {
-            await api('/entities', {method: 'POST', body: JSON.stringify({name, description})});
+            await api('/topics', {method: 'POST', body: JSON.stringify({name, description, block_id})});
         }
         await refreshKnowledge();
-        closeEntityModal();
+        closeTopicModal();
     } catch (err) {
         console.error(err);
         showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
     }
 }
 
-async function deleteEntity(entityId) {
-    if (!confirm('Удалить скилл вместе со всеми его командами?')) return;
+async function deleteTopic(topicId) {
+    if (!confirm('Удалить тему вместе со всеми её понятиями?')) return;
     try {
-        await api(`/entities/${entityId}`, {method: 'DELETE'});
+        await api(`/topics/${topicId}`, {method: 'DELETE'});
         await refreshKnowledge();
     } catch (err) {
         console.error(err);
@@ -542,54 +648,54 @@ async function deleteEntity(entityId) {
     }
 }
 
-let currentEntityIdForItem = null;
-let editingItemId = null;
+let currentTopicIdForConcept = null;
+let editingConceptId = null;
 
-function openItemModal(entityId, itemId) {
-    currentEntityIdForItem = entityId;
-    editingItemId = itemId || null;
-    const entity = entities.find(e => e.id === entityId);
-    const item = editingItemId ? entity?.items.find(i => i.id === editingItemId) : null;
-    document.getElementById('item-modal-title').textContent = item ? 'Редактировать команду' : 'Новая команда';
-    document.getElementById('item-submit-btn').textContent = item ? 'Сохранить' : 'Добавить';
-    document.getElementById('input-item-name').value = item ? item.name : '';
-    document.getElementById('input-item-description').value = item ? item.description : '';
-    document.getElementById('item-overlay').classList.add('open');
-    document.getElementById('input-item-name').focus();
+function openConceptModal(topicId, conceptId) {
+    currentTopicIdForConcept = topicId;
+    editingConceptId = conceptId || null;
+    const topic = allTopics().find(t => t.id === topicId);
+    const concept = editingConceptId ? topic?.concepts.find(c => c.id === editingConceptId) : null;
+    document.getElementById('concept-modal-title').textContent = concept ? 'Редактировать понятие' : 'Новое понятие';
+    document.getElementById('concept-submit-btn').textContent = concept ? 'Сохранить' : 'Добавить';
+    document.getElementById('input-concept-name').value = concept ? concept.name : '';
+    document.getElementById('input-concept-description').value = concept ? concept.description : '';
+    document.getElementById('concept-overlay').classList.add('open');
+    document.getElementById('input-concept-name').focus();
 }
 
-function closeItemModal() {
-    currentEntityIdForItem = null;
-    editingItemId = null;
-    document.getElementById('item-overlay').classList.remove('open');
-    document.getElementById('input-item-name').value = '';
-    document.getElementById('input-item-description').value = '';
+function closeConceptModal() {
+    currentTopicIdForConcept = null;
+    editingConceptId = null;
+    document.getElementById('concept-overlay').classList.remove('open');
+    document.getElementById('input-concept-name').value = '';
+    document.getElementById('input-concept-description').value = '';
 }
 
-async function addItem() {
-    const name = document.getElementById('input-item-name').value.trim();
-    if (!name || !currentEntityIdForItem) return;
-    const description = document.getElementById('input-item-description').value.trim();
+async function addConcept() {
+    const name = document.getElementById('input-concept-name').value.trim();
+    if (!name || !currentTopicIdForConcept) return;
+    const description = document.getElementById('input-concept-description').value.trim();
     try {
-        if (editingItemId) {
-            await api(`/items/${editingItemId}`, {method: 'PATCH', body: JSON.stringify({name, description})});
+        if (editingConceptId) {
+            await api(`/concepts/${editingConceptId}`, {method: 'PATCH', body: JSON.stringify({name, description})});
         } else {
-            await api(`/entities/${currentEntityIdForItem}/items`, {
+            await api(`/topics/${currentTopicIdForConcept}/concepts`, {
                 method: 'POST',
                 body: JSON.stringify({name, description}),
             });
         }
         await refreshKnowledge();
-        closeItemModal();
+        closeConceptModal();
     } catch (err) {
         console.error(err);
         showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
     }
 }
 
-async function deleteItem(itemId) {
+async function deleteConcept(conceptId) {
     try {
-        await api(`/items/${itemId}`, {method: 'DELETE'});
+        await api(`/concepts/${conceptId}`, {method: 'DELETE'});
         await refreshKnowledge();
     } catch (err) {
         console.error(err);
@@ -597,25 +703,275 @@ async function deleteItem(itemId) {
     }
 }
 
-document.getElementById('entity-overlay').addEventListener('click', (e) => {
-    if (e.target.id === 'entity-overlay') closeEntityModal();
+let editingBlockId = null;
+
+function openBlockModal(blockId) {
+    editingBlockId = blockId || null;
+    const block = editingBlockId ? knowledgeBlocks.find(b => b.id === editingBlockId) : null;
+    document.getElementById('block-modal-title').textContent = block ? 'Переименовать блок' : 'Новый блок';
+    document.getElementById('block-submit-btn').textContent = block ? 'Сохранить' : 'Добавить';
+    document.getElementById('input-block-name').value = block ? block.name : '';
+    document.getElementById('block-overlay').classList.add('open');
+    document.getElementById('input-block-name').focus();
+}
+
+function closeBlockModal() {
+    editingBlockId = null;
+    document.getElementById('block-overlay').classList.remove('open');
+    document.getElementById('input-block-name').value = '';
+}
+
+async function addBlock() {
+    const name = document.getElementById('input-block-name').value.trim();
+    if (!name) return;
+    try {
+        if (editingBlockId) {
+            await api(`/blocks/${editingBlockId}`, {method: 'PATCH', body: JSON.stringify({name})});
+        } else {
+            await api('/blocks', {method: 'POST', body: JSON.stringify({name})});
+        }
+        await refreshKnowledge();
+        closeBlockModal();
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+    }
+}
+
+async function deleteBlock(blockId) {
+    if (!confirm('Удалить блок? Темы внутри него останутся, но станут без блока.')) return;
+    try {
+        await api(`/blocks/${blockId}`, {method: 'DELETE'});
+        await refreshKnowledge();
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+    }
+}
+
+let draggedBlockId = null;
+let draggedTopicId = null;
+let draggedConceptId = null;
+
+function onBlockDragStart(e) {
+    e.stopPropagation();
+    draggedBlockId = e.currentTarget.closest('.block-section').dataset.blockId;
+    e.currentTarget.closest('.block-section').classList.add('dragging-block');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function onBlockDragEnd(e) {
+    e.currentTarget.closest('.block-section').classList.remove('dragging-block');
+    draggedBlockId = null;
+}
+
+function onBlockSectionDragOver(e) {
+    if (!draggedBlockId && !draggedTopicId) return;
+    e.preventDefault();
+    e.currentTarget.classList.add('drag-over');
+}
+
+function onBlockSectionDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+}
+
+async function onBlockSectionDrop(e) {
+    if (!draggedBlockId && !draggedTopicId) return;
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    const targetBlockId = e.currentTarget.dataset.blockId || null;
+
+    if (draggedBlockId) {
+        if (!targetBlockId || draggedBlockId === targetBlockId) return;
+        const fromIdx = knowledgeBlocks.findIndex(b => b.id === draggedBlockId);
+        const toIdx = knowledgeBlocks.findIndex(b => b.id === targetBlockId);
+        const [moved] = knowledgeBlocks.splice(fromIdx, 1);
+        knowledgeBlocks.splice(toIdx, 0, moved);
+        renderKnowledge();
+        try {
+            await api('/blocks/reorder', {method: 'PUT', body: JSON.stringify({keys: knowledgeBlocks.map(b => b.id)})});
+        } catch (err) {
+            console.error(err);
+            showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+            await refreshKnowledge();
+        }
+        return;
+    }
+
+    if (draggedTopicId) {
+        const topic = allTopics().find(t => t.id === draggedTopicId);
+        if (topic && topic.block_id !== targetBlockId) {
+            try {
+                await api(`/topics/${draggedTopicId}`, {method: 'PATCH', body: JSON.stringify({block_id: targetBlockId})});
+                await refreshKnowledge();
+            } catch (err) {
+                console.error(err);
+                showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+            }
+        }
+    }
+}
+
+function onTopicDragStart(e) {
+    e.stopPropagation();
+    draggedTopicId = e.currentTarget.dataset.topicId;
+    e.currentTarget.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function onTopicDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    draggedTopicId = null;
+}
+
+function topicsInBlock(blockId) {
+    if (blockId === null) return ungroupedTopics;
+    const block = knowledgeBlocks.find(b => b.id === blockId);
+    return block ? block.topics : [];
+}
+
+function onTopicDragOver(e) {
+    if (draggedConceptId) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.add('drag-over');
+        return;
+    }
+    if (draggedTopicId && draggedTopicId !== e.currentTarget.dataset.topicId) {
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        const before = (e.clientX - rect.left) < rect.width / 2;
+        e.currentTarget.classList.toggle('drop-before', before);
+        e.currentTarget.classList.toggle('drop-after', !before);
+    }
+}
+
+function onTopicDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over', 'drop-before', 'drop-after');
+}
+
+async function onTopicDrop(e) {
+    if (draggedConceptId) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('drag-over');
+        const targetTopicId = e.currentTarget.dataset.topicId;
+
+        const topic = allTopics().find(t => t.concepts.some(c => c.id === draggedConceptId));
+        if (topic && topic.id !== targetTopicId) {
+            try {
+                await api(`/concepts/${draggedConceptId}`, {method: 'PATCH', body: JSON.stringify({topic_id: targetTopicId})});
+                await refreshKnowledge();
+            } catch (err) {
+                console.error(err);
+                showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+            }
+        }
+        return;
+    }
+
+    if (draggedTopicId && draggedTopicId !== e.currentTarget.dataset.topicId) {
+        e.preventDefault();
+        e.stopPropagation();
+        const before = e.currentTarget.classList.contains('drop-before');
+        e.currentTarget.classList.remove('drag-over', 'drop-before', 'drop-after');
+        const targetTopic = allTopics().find(t => t.id === e.currentTarget.dataset.topicId);
+        if (!targetTopic) return;
+        const siblings = topicsInBlock(targetTopic.block_id).filter(t => t.id !== draggedTopicId);
+        const targetIndex = siblings.findIndex(t => t.id === targetTopic.id);
+        const position = before ? targetIndex : targetIndex + 1;
+        try {
+            await api(`/topics/${draggedTopicId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({block_id: targetTopic.block_id, position}),
+            });
+            await refreshKnowledge();
+        } catch (err) {
+            console.error(err);
+            showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+        }
+    }
+}
+
+function onConceptDragStart(e) {
+    e.stopPropagation();
+    draggedConceptId = e.currentTarget.dataset.conceptId;
+    e.currentTarget.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function onConceptDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    draggedConceptId = null;
+}
+
+function onConceptRowDragOver(e) {
+    if (!draggedConceptId || draggedConceptId === e.currentTarget.dataset.conceptId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const before = (e.clientY - rect.top) < rect.height / 2;
+    e.currentTarget.classList.toggle('drop-before', before);
+    e.currentTarget.classList.toggle('drop-after', !before);
+}
+
+function onConceptRowDragLeave(e) {
+    e.currentTarget.classList.remove('drop-before', 'drop-after');
+}
+
+async function onConceptRowDrop(e) {
+    if (!draggedConceptId || draggedConceptId === e.currentTarget.dataset.conceptId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const before = e.currentTarget.classList.contains('drop-before');
+    e.currentTarget.classList.remove('drop-before', 'drop-after');
+    const targetConceptId = e.currentTarget.dataset.conceptId;
+    const targetTopic = allTopics().find(t => t.concepts.some(c => c.id === targetConceptId));
+    if (!targetTopic) return;
+    const siblings = targetTopic.concepts.filter(c => c.id !== draggedConceptId);
+    const targetIndex = siblings.findIndex(c => c.id === targetConceptId);
+    const position = before ? targetIndex : targetIndex + 1;
+    try {
+        await api(`/concepts/${draggedConceptId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({topic_id: targetTopic.id, position}),
+        });
+        await refreshKnowledge();
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+    }
+}
+
+document.getElementById('topic-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'topic-overlay') closeTopicModal();
 });
-document.getElementById('item-overlay').addEventListener('click', (e) => {
-    if (e.target.id === 'item-overlay') closeItemModal();
+document.getElementById('concept-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'concept-overlay') closeConceptModal();
+});
+document.getElementById('block-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'block-overlay') closeBlockModal();
 });
 
 async function handleRoute() {
     const taskMatch = location.hash.match(/^#\/task\/(.+)$/);
     const isKnowledge = location.hash === '#/knowledge';
+    const appHeader = document.getElementById('app-header');
     const boardView = document.getElementById('board-view');
     const detailView = document.getElementById('detail-view');
     const knowledgeView = document.getElementById('knowledge-view');
 
+    appHeader.classList.remove('hidden');
     boardView.classList.add('hidden');
     detailView.classList.add('hidden');
     knowledgeView.classList.add('hidden');
 
+    document.getElementById('tab-board').classList.toggle('active', !isKnowledge);
+    document.getElementById('tab-knowledge').classList.toggle('active', isKnowledge);
+
     if (taskMatch) {
+        appHeader.classList.add('hidden');
         detailView.classList.remove('hidden');
         renderDetail(taskMatch[1]);
     } else if (isKnowledge) {

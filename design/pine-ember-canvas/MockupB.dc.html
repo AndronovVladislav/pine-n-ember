@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap');
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #FFB454; } a:hover { color: #FF9E64; }
+  </style>
+</helmet>
+<div style="width:1360px; min-height:880px; background:#182A20; font-family:'Work Sans', sans-serif; color:#E9F0E4; padding:48px 56px;">
+
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:36px;">
+    <div>
+      <div style="font-family:'EB Garamond', serif; font-size:30px; font-weight:600;">Мой трекер</div>
+      <div style="font-family:'Work Sans', sans-serif; font-size:13px; color:#9BB89C; margin-top:6px;">7 задач</div>
+      <div style="display:flex; gap:22px; margin-top:14px;">
+        <div style="font-family:'Work Sans', sans-serif; font-size:13px; color:#E9F0E4; border-bottom:2px solid #FFB454; padding-bottom:5px;">Доска</div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:13px; color:#9BB89C;">База знаний</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; background:#FFB454; color:#16241B; font-family:'Work Sans', sans-serif; font-size:13px; font-weight:600; padding:12px 22px; border-radius:999px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16241B" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Новая задача
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:20px;">
+
+    <div style="background:#20392A; border-radius:18px; padding:20px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+        <div style="width:9px; height:9px; border-radius:50%; background:#9BB89C;"></div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:13px; font-weight:500;">Черновик</div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C; margin-left:auto;">2</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="background:#16241B; border-radius:14px; padding:16px;">
+          <div style="font-family:'Work Sans', sans-serif; font-size:14px; margin-bottom:10px;">Опросник на грейд</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#20392A; color:#9BB89C; font-family:'Work Sans', sans-serif; font-size:11px; padding:4px 10px; border-radius:8px;">work</div>
+            <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C;">пн</div>
+          </div>
+        </div>
+        <div style="background:#16241B; border-radius:14px; padding:16px;">
+          <div style="font-family:'Work Sans', sans-serif; font-size:14px; margin-bottom:10px;">Въехать в фича-лидство</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#20392A; color:#9BB89C; font-family:'Work Sans', sans-serif; font-size:11px; padding:4px 10px; border-radius:8px;">work</div>
+            <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C;">на этой неделе</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#20392A; border-radius:18px; padding:20px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+        <div style="width:9px; height:9px; border-radius:50%; background:#FFB454;"></div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:13px; font-weight:500;">В работе</div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C; margin-left:auto;">1</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="background:#16241B; border-radius:14px; padding:16px;">
+          <div style="font-family:'Work Sans', sans-serif; font-size:14px; margin-bottom:10px;">Meal-план на неделю</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#20392A; color:#FFB454; font-family:'Work Sans', sans-serif; font-size:11px; padding:4px 10px; border-radius:8px;">личное</div>
+            <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C;">сегодня</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#20392A; border-radius:18px; padding:20px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+        <div style="width:9px; height:9px; border-radius:50%; background:#E8A87C;"></div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:13px; font-weight:500;">На проверке</div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C; margin-left:auto;">1</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="background:#16241B; border-radius:14px; padding:16px;">
+          <div style="font-family:'Work Sans', sans-serif; font-size:14px; margin-bottom:10px;">MR: ot-merge-bot фикс</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#20392A; color:#9BB89C; font-family:'Work Sans', sans-serif; font-size:11px; padding:4px 10px; border-radius:8px;">work</div>
+            <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C;">вт</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#20392A; border-radius:18px; padding:20px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+        <div style="width:9px; height:9px; border-radius:50%; background:#9BB89C; opacity:0.5;"></div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:13px; font-weight:500; color:#9BB89C;">Готово</div>
+        <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C; margin-left:auto;">2</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="background:#16241B; border-radius:14px; padding:16px; opacity:0.55;">
+          <div style="font-family:'Work Sans', sans-serif; font-size:14px; margin-bottom:10px; text-decoration:line-through;">Тема для урока по музыке</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#20392A; color:#FFB454; font-family:'Work Sans', sans-serif; font-size:11px; padding:4px 10px; border-radius:8px;">личное</div>
+            <div style="font-family:'Work Sans', sans-serif; font-size:12px; color:#9BB89C;">пт</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

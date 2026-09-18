@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600&display=swap');
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #FF9E64; } a:hover { color: #FFB454; }
+  </style>
+</helmet>
+<div style="width:1360px; min-height:880px; background:#16241B; font-family:'Space Grotesk', sans-serif; color:#DCE9D6; padding:36px 44px;">
+
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px;">
+    <div>
+      <div style="font-family:'JetBrains Mono', monospace; font-size:20px; font-weight:700; letter-spacing:-0.01em;">Мой трекер</div>
+      <div style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#7FA37B; margin-top:4px;">7 задач</div>
+      <div style="display:flex; gap:18px; margin-top:10px;">
+        <div style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#DCE9D6; border-bottom:2px solid #FF9E64; padding-bottom:4px;">доска</div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#7FA37B;">база знаний</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; background:#FF9E64; color:#16241B; font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; padding:10px 16px; border:1px solid #FF9E64;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16241B" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Новая задача
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:2px; background:#3D5A45;">
+
+    <div style="background:#1F3B2C; padding:14px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+        <div style="width:8px; height:8px; background:#7FA37B;"></div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.08em;">Черновик</div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B; margin-left:auto;">2</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#16241B; border:1px solid #3D5A45; border-left:3px solid #FF9E64; padding:12px;">
+          <div style="font-family:'Space Grotesk', sans-serif; font-size:13.5px; margin-bottom:8px;">Опросник на грейд</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#1F3B2C; color:#7FA37B; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border:1px solid #3D5A45;">work</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">пн</div>
+          </div>
+        </div>
+        <div style="background:#16241B; border:1px solid #3D5A45; border-left:3px solid #FF9E64; padding:12px;">
+          <div style="font-family:'Space Grotesk', sans-serif; font-size:13.5px; margin-bottom:8px;">Въехать в фича-лидство</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#1F3B2C; color:#7FA37B; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border:1px solid #3D5A45;">work</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">на этой неделе</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#1F3B2C; padding:14px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+        <div style="width:8px; height:8px; background:#FFB454;"></div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.08em;">В работе</div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B; margin-left:auto;">2</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#16241B; border:1px solid #3D5A45; border-left:3px solid #FFB454; padding:12px;">
+          <div style="font-family:'Space Grotesk', sans-serif; font-size:13.5px; margin-bottom:8px;">Meal-план на неделю</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#1F3B2C; color:#DCE9D6; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border:1px solid #FF9E64;">личное</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">сегодня</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#1F3B2C; padding:14px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+        <div style="width:8px; height:8px; background:#FF9E64;"></div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.08em;">На проверке</div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B; margin-left:auto;">1</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#16241B; border:1px solid #3D5A45; border-left:3px solid #FF9E64; padding:12px;">
+          <div style="font-family:'Space Grotesk', sans-serif; font-size:13.5px; margin-bottom:8px;">MR: ot-merge-bot фикс</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#1F3B2C; color:#7FA37B; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border:1px solid #3D5A45;">work</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">вт</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#1F3B2C; padding:14px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+        <div style="width:8px; height:8px; background:#7FA37B; opacity:0.5;"></div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#7FA37B;">Готово</div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B; margin-left:auto;">2</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#16241B; border:1px solid #3D5A45; padding:12px; opacity:0.55;">
+          <div style="font-family:'Space Grotesk', sans-serif; font-size:13.5px; margin-bottom:8px; text-decoration:line-through;">Тема для урока по музыке</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#1F3B2C; color:#DCE9D6; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border:1px solid #3D5A45;">личное</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">пт</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

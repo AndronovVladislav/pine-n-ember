@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pine & Ember</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div id="toast" class="toast hidden" role="alert"></div>
+
+<header id="board-view">
+    <div class="header">
+        <div>
+            <h1>Pine &amp; Ember</h1>
+            <p id="subtitle"></p>
+            <nav class="tabs">
+                <a class="tab active" id="tab-board" href="#">Доска</a>
+                <a class="tab" id="tab-knowledge" href="#/knowledge">База знаний</a>
+            </nav>
+        </div>
+        <div class="header-actions">
+            <div class="align-control" role="group" aria-label="Выравнивание колонок">
+                <button class="align-btn" data-align="left" title="По левому краю" onclick="setBoardAlign('left')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg>
+                </button>
+                <button class="align-btn" data-align="center" title="По центру" onclick="setBoardAlign('center')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M5.5 18h13"/></svg>
+                </button>
+                <button class="align-btn" data-align="right" title="По правому краю" onclick="setBoardAlign('right')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M10 12h10M7 18h13"/></svg>
+                </button>
+            </div>
+            <button class="add-btn" onclick="openModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Новая задача
+            </button>
+        </div>
+    </div>
+
+    <div class="board" id="board"></div>
+</header>
+
+<section id="knowledge-view" class="hidden">
+    <div class="header">
+        <div>
+            <h1>Pine &amp; Ember</h1>
+            <p id="knowledge-subtitle"></p>
+            <nav class="tabs">
+                <a class="tab" id="tab-board-2" href="#">Доска</a>
+                <a class="tab active" id="tab-knowledge-2" href="#/knowledge">База знаний</a>
+            </nav>
+        </div>
+        <button class="add-btn" onclick="openEntityModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Новый скилл
+        </button>
+    </div>
+
+    <div class="entities-grid" id="entities-grid"></div>
+</section>
+
+<section id="detail-view" class="hidden">
+    <button class="back-link" onclick="goToBoard()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+        </svg>
+        Назад к доске
+    </button>
+    <div class="detail-card" id="detail-card"></div>
+</section>
+
+<div class="overlay" id="overlay">
+    <div class="modal">
+        <h3>Новая задача</h3>
+        <div class="field">
+            <label>Название</label>
+            <input type="text" id="input-title" placeholder="Например: разобрать WAL">
+        </div>
+        <div class="field">
+            <label>Тег</label>
+            <input type="text" id="input-tag" list="tag-options" placeholder="work, личное, или свой">
+            <datalist id="tag-options"></datalist>
+        </div>
+        <div class="field">
+            <label>Дата</label>
+            <input type="text" id="input-due" placeholder="например: пт, сегодня, ср">
+        </div>
+        <div class="field">
+            <label>Статус</label>
+            <input type="text" id="input-status" list="status-options" placeholder="Черновик, В работе, или свой">
+            <datalist id="status-options"></datalist>
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal()">Отмена</button>
+            <button class="btn primary" onclick="addTask()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="entity-overlay">
+    <div class="modal">
+        <h3 id="entity-modal-title">Новый скилл</h3>
+        <div class="field">
+            <label>Название</label>
+            <input type="text" id="input-entity-name" placeholder="Например: git-helper">
+        </div>
+        <div class="field">
+            <label>Описание</label>
+            <input type="text" id="input-entity-description" placeholder="Коротко, для чего этот скилл">
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeEntityModal()">Отмена</button>
+            <button class="btn primary" id="entity-submit-btn" onclick="addEntity()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="item-overlay">
+    <div class="modal">
+        <h3 id="item-modal-title">Новая команда</h3>
+        <div class="field">
+            <label>Название</label>
+            <input type="text" id="input-item-name" placeholder="Например: /commit">
+        </div>
+        <div class="field">
+            <label>Описание</label>
+            <input type="text" id="input-item-description" placeholder="Что делает эта команда">
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeItemModal()">Отмена</button>
+            <button class="btn primary" id="item-submit-btn" onclick="addItem()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #FF9E64; } a:hover { color: #FFB454; }
+  </style>
+</helmet>
+<div style="width:1360px; min-height:900px; background:
+    radial-gradient(ellipse 900px 560px at 8% -12%, rgba(255,158,100,0.13), transparent 60%),
+    radial-gradient(ellipse 760px 560px at 100% 8%, rgba(127,163,123,0.12), transparent 55%),
+    radial-gradient(ellipse 820px 640px at 48% 118%, rgba(255,180,84,0.08), transparent 60%),
+    #16241B;
+    font-family:'Outfit', sans-serif; color:#DCE9D6; position:relative; overflow:hidden;">
+  <div style="position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,0.07) 1.1px, transparent 1.1px); background-size:24px 24px; -webkit-mask-image:radial-gradient(ellipse 85% 70% at 50% 6%, black 0%, transparent 72%); mask-image:radial-gradient(ellipse 85% 70% at 50% 6%, black 0%, transparent 72%); pointer-events:none;"></div>
+
+  <div style="position:relative; padding:40px 48px;">
+
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px;">
+      <div>
+        <div style="font-size:22px; font-weight:600; letter-spacing:-0.01em;">Мой трекер</div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#7FA37B; margin-top:4px; font-variant-numeric:tabular-nums;">07 задач</div>
+        <div style="display:flex; gap:18px; margin-top:10px;">
+          <div style="font-size:13px; color:#DCE9D6; border-bottom:2px solid #FF9E64; padding-bottom:4px;">Доска</div>
+          <div style="font-size:13px; color:#7FA37B;">База знаний</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; background:#1F3B2C; color:#DCE9D6; font-size:13px; font-weight:500; padding:10px 18px; border-radius:10px; border:1px solid #3D5A45;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF9E64" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Новая задача
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px;">
+
+      <div style="background:#1F3B2C; border:1px solid #3D5A45; border-radius:14px; padding:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <div style="width:8px; height:8px; border-radius:50%; background:#7FA37B;"></div>
+          <div style="font-size:13px; font-weight:500;">Черновик</div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B; margin-left:auto; font-variant-numeric:tabular-nums;">2</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="background:#16241B; border:1px solid #3D5A45; border-left:3px solid #7FA37B; border-radius:10px; padding:12px;">
+            <div style="font-size:13.5px; margin-bottom:8px;">Опросник на грейд</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="background:#1F3B2C; color:#7FA37B; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border-radius:6px;">work</div>
+              <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">пн</div>
+            </div>
+          </div>
+          <div style="background:#16241B; border:1px solid #3D5A45; border-left:3px solid #7FA37B; border-radius:10px; padding:12px;">
+            <div style="font-size:13.5px; margin-bottom:8px;">Въехать в фича-лидство</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="background:#1F3B2C; color:#7FA37B; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border-radius:6px;">work</div>
+              <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">на этой неделе</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#1F3B2C; border:1px solid #3D5A45; border-radius:14px; padding:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <div style="width:8px; height:8px; border-radius:50%; background:#FFB454;"></div>
+          <div style="font-size:13px; font-weight:500;">В работе</div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B; margin-left:auto; font-variant-numeric:tabular-nums;">1</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="background:#16241B; border:1px solid #3D5A45; border-left:3px solid #FFB454; border-radius:10px; padding:12px;">
+            <div style="font-size:13.5px; margin-bottom:8px;">Meal-план на неделю</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="background:#1F3B2C; color:#FFB454; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border-radius:6px;">личное</div>
+              <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">сегодня</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#1F3B2C; border:1px solid #3D5A45; border-radius:14px; padding:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <div style="width:8px; height:8px; border-radius:50%; background:#FF9E64;"></div>
+          <div style="font-size:13px; font-weight:500;">На проверке</div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B; margin-left:auto; font-variant-numeric:tabular-nums;">1</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="background:#16241B; border:1px solid #3D5A45; border-left:3px solid #FF9E64; border-radius:10px; padding:12px;">
+            <div style="font-size:13.5px; margin-bottom:8px;">MR: ot-merge-bot фикс</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="background:#1F3B2C; color:#7FA37B; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border-radius:6px;">work</div>
+              <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">вт</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#1F3B2C; border:1px solid #3D5A45; border-radius:14px; padding:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <div style="width:8px; height:8px; border-radius:50%; background:#7FA37B; opacity:0.5;"></div>
+          <div style="font-size:13px; font-weight:500; color:#7FA37B;">Готово</div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B; margin-left:auto; font-variant-numeric:tabular-nums;">2</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="background:#16241B; border:1px solid #3D5A45; border-radius:10px; padding:12px; opacity:0.55;">
+            <div style="font-size:13.5px; margin-bottom:8px; text-decoration:line-through;">Тема для урока по музыке</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="background:#1F3B2C; color:#FFB454; font-family:'JetBrains Mono', monospace; font-size:10px; padding:2px 8px; border-radius:6px;">личное</div>
+              <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#7FA37B;">пт</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

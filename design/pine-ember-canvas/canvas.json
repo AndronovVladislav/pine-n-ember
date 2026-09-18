@@ -1,0 +1,13 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1240, "h": 940, "title": "Terminal Ember — брендбук" },
+    { "file": "MockupA.dc.html", "x": 1360, "y": 0, "w": 1400, "h": 920, "title": "Terminal Ember — мокап трекера" },
+    { "file": "BrandC.dc.html", "x": 0, "y": 1060, "w": 1240, "h": 960, "title": "Pine Ember Native — брендбук" },
+    { "file": "MockupC.dc.html", "x": 1360, "y": 1060, "w": 1400, "h": 940, "title": "Pine Ember Native — мокап трекера" }
+  ],
+  "annotations": [
+    { "id": "label-a", "x": 0, "y": -60, "w": 300, "text": "Направление A: Terminal Ember\nБуквальное прочтение темы: терминал, моно-шрифт, острые углы" },
+    { "id": "label-c", "x": 0, "y": 1000, "w": 320, "text": "Направление C: Pine Ember Native\nТекущая структура my-tracker (Outfit, скругления, grain, nebula-градиенты) перекрашена в палитру Pine Ember, с точечным терминальным акцентом" }
+  ],
+  "launch": { "view": "canvas" }
+}

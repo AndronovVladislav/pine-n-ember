@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+tracker.db
+/.idea
+backups/

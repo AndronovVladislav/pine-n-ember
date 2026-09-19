@@ -30,12 +30,12 @@ def get_knowledge() -> dict:
         return {
             'blocks': [
                 {
-                    **BlockOut.model_validate(bwt.block).model_dump(),
-                    'topics': [TopicOut.model_validate(t).model_dump() for t in bwt.topics],
+                    **BlockOut.model_validate(block_with_topics.block).model_dump(),
+                    'topics': [TopicOut.model_validate(topic).model_dump() for topic in block_with_topics.topics],
                 }
-                for bwt in view.blocks
+                for block_with_topics in view.blocks
             ],
-            'topics': [TopicOut.model_validate(t).model_dump() for t in view.topics],
+            'topics': [TopicOut.model_validate(topic).model_dump() for topic in view.topics],
         }
 
 

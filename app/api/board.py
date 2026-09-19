@@ -17,9 +17,9 @@ def get_board() -> dict:
     with _board_repo() as repo:
         status_list, tag_list, task_list = repo.list_board()
         return {
-            'statuses': [{'key': s.key, 'label': s.label, 'color': s.color} for s in status_list],
-            'tags': [{'key': t.key, 'label': t.label, 'bg': t.bg, 'text': t.text} for t in tag_list],
-            'tasks': [TaskOut.model_validate(t).model_dump() for t in task_list],
+            'statuses': [{'key': status.key, 'label': status.label, 'color': status.color} for status in status_list],
+            'tags': [{'key': tag.key, 'label': tag.label, 'bg': tag.bg, 'text': tag.text} for tag in tag_list],
+            'tasks': [TaskOut.model_validate(task).model_dump() for task in task_list],
         }
 
 

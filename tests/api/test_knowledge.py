@@ -290,7 +290,7 @@ class TestGetKnowledge:
         assert body['blocks'][0]['id'] == block['id']
         assert len(body['blocks'][0]['topics']) == 1
         assert body['blocks'][0]['topics'][0]['id'] == topic['id']
-        assert [c['name'] for c in body['blocks'][0]['topics'][0]['concepts']] == ['Definition', 'Types']
+        assert [concept['name'] for concept in body['blocks'][0]['topics'][0]['concepts']] == ['Definition', 'Types']
         assert body['topics'] == []
 
     def test_topics_without_block_are_listed_separately(self, client):

@@ -26,7 +26,8 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
             row = conn.execute(select(models.Status.key).order_by(models.Status.position)).first()
             if row:
                 return row.key
-            label = 'Backlog'  # ponytail: первый статус на пустой доске, явной метки не дали
+            # ponytail: первый статус на пустой доске, явной метки не дали
+            label = 'Backlog'
 
         found = conn.execute(
             select(models.Status.key).where(
@@ -67,11 +68,14 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
     def list_board(self) -> tuple[list[Status], list[Tag], list[Task]]:
         conn = self._conn
         status_list = [
-            Status(key=r.key, label=r.label, color=r.color)
-            for r in conn.execute(select(models.Status).order_by(models.Status.position))
+            Status(key=row.key, label=row.label, color=row.color)
+            for row in conn.execute(select(models.Status).order_by(models.Status.position))
         ]
-        tag_list = [Tag(key=r.key, label=r.label, bg=r.bg, text=r.text_color) for r in conn.execute(select(models.Tag))]
-        task_list = [_task_from_row(r) for r in conn.execute(select(models.Task).order_by(models.Task.position))]
+        tag_list = [
+            Tag(key=row.key, label=row.label, bg=row.bg, text=row.text_color)
+            for row in conn.execute(select(models.Tag))
+        ]
+        task_list = [_task_from_row(row) for row in conn.execute(select(models.Task).order_by(models.Task.position))]
         return status_list, tag_list, task_list
 
     def create_task(self, title: str, tag_label: str | None, due: str, status_label: str | None) -> Task:
@@ -101,11 +105,11 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         self,
         task_id: str,
         *,
-        title=None,
-        tag_label=None,
-        status_label=None,
-        due=None,
-        description=None,
+        title: str | None = None,
+        tag_label: str | None = None,
+        status_label: str | None = None,
+        due: str | None = None,
+        description: str | None = None,
     ) -> Task:
         conn = self._conn
         row = conn.execute(select(models.Task).where(models.Task.id == task_id)).first()
@@ -165,7 +169,7 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
 
     def reorder_statuses(self, keys: list[str]) -> None:
         conn = self._conn
-        existing = {r.key for r in conn.execute(select(models.Status.key))}
+        existing = {row.key for row in conn.execute(select(models.Status.key))}
         if set(keys) != existing:
             raise InvalidOperation('keys must match existing statuses exactly')
         for position, key in enumerate(keys):

@@ -105,7 +105,6 @@ class TestCreateTopic:
             'name': 'git-helper',
             'description': 'тема про git',
             'position': 0,
-            'metadata': '{}',
         }
 
     def test_with_block_id_is_linked_to_that_block(self, client, db_connection):
@@ -182,7 +181,6 @@ class TestUpdateTopic:
             'name': 'API',
             'description': 'new',
             'position': 0,
-            'metadata': '{}',
         }
 
 
@@ -230,7 +228,6 @@ class TestCreateConcept:
             'name': 'Definition',
             'description': 'что это такое',
             'position': 0,
-            'metadata': '{}',
         }
 
     def test_missing_topic__returns_404(self, client):
@@ -265,7 +262,6 @@ class TestUpdateConcept:
             'name': 'Definition',
             'description': 'new',
             'position': 0,
-            'metadata': '{}',
         }
 
 
@@ -367,7 +363,6 @@ class TestMoveConceptBetweenTopics:
             'name': 'Definition',
             'description': '',
             'position': 1,
-            'metadata': '{}',
         }
 
     def test_missing_target_topic__returns_404(self, client):
@@ -446,7 +441,6 @@ class TestMoveTopicBetweenBlocksWithPosition:
             'name': 'API',
             'description': '',
             'position': 0,
-            'metadata': '{}',
         }
         assert topic_row_as_dict(db_connection, existing['id'])['position'] == 1
 
@@ -510,6 +504,5 @@ class TestMoveConceptBetweenTopicsWithPosition:
             'name': 'Definition',
             'description': '',
             'position': 0,
-            'metadata': '{}',
         }
         assert concept_row_as_dict(db_connection, existing['id'])['position'] == 1

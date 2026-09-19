@@ -48,7 +48,6 @@ topics = Table(
     Column('name', Text, nullable=False),
     Column('description', Text, server_default=''),
     Column('position', Integer, nullable=False, server_default='0'),
-    Column('metadata', Text, nullable=False, server_default='{}'),
 )
 
 concepts = Table(
@@ -59,5 +58,4 @@ concepts = Table(
     Column('name', Text, nullable=False),
     Column('description', Text, server_default=''),
     Column('position', Integer, nullable=False, server_default='0'),
-    Column('metadata', Text, nullable=False, server_default='{}'),
 )

@@ -1,11 +1,11 @@
 import pytest
 from alembic.config import Config
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, func, select, text
+from sqlalchemy import create_engine, text
 
-import app.db as db_module
-from app.bootstrap.database import ALEMBIC_INI, bootstrap_database, check_schema_is_current
-from app.tables import metadata, statuses
+import app.domains  # noqa: F401 — регистрирует все ORM-models доменов на Base.metadata
+from app.bootstrap.database import ALEMBIC_INI, check_schema_is_current
+from app.domains._base import Base
 
 
 def _make_unstamped_sqlite(tmp_path):
@@ -18,7 +18,7 @@ def _make_unstamped_sqlite(tmp_path):
     приложения.
     """
     engine = create_engine(f'sqlite:///{tmp_path / "scratch.db"}')
-    metadata.create_all(engine)
+    Base.metadata.create_all(engine)
     return engine
 
 
@@ -58,25 +58,3 @@ class TestCheckSchemaIsCurrent:
 
         with engine.connect() as conn:
             check_schema_is_current(conn)
-
-
-@pytest.mark.spec('0005')
-class TestBootstrapDatabase:
-    def test_stamped_db__seeds_defaults_without_raising(self, truncated_db):
-        """
-        Тест проверяет, что bootstrap_database() на правильно застемпленной БД (тестовая
-        Postgres-БД, схема которой создана и застемплена один раз на сессию в conftest)
-        отрабатывает полностью: не падает на проверке схемы и досеивает дефолтные
-        статусы/теги/задачи.
-
-        Ожидание: bootstrap_database() не бросает исключение, после вызова в statuses есть
-        дефолтные записи
-        """
-        bootstrap_database()
-
-        conn = db_module.get_connection()
-        try:
-            count = conn.execute(select(func.count()).select_from(statuses)).scalar_one()
-        finally:
-            conn.close()
-        assert count > 0

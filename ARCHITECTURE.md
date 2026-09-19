@@ -14,22 +14,31 @@
 
 ## Текущее состояние
 
-С `specs/0010-hexagonal-architecture.md` (TRACKER-3) реализовано на практике:
+С `specs/0011-domains-package-restructure.md` (TRACKER-4) структура — package-by-feature: каждый
+домен (`app/domains/board/`, `app/domains/knowledge/`) закрытая структура, наружу торчит только
+`__init__.py` пакета:
 
-- `app/domain/` — модели (dataclasses), порты (`typing.Protocol`: `BoardRepository`,
-  `KnowledgeRepository`), доменные исключения (`NotFound`, `InvalidOperation`), чистые хелперы
-  (`gen_id`/`slug`/`next_color`). Не импортирует ничего из SQLAlchemy/FastAPI.
-- `app/adapters/` — `SqlAlchemyBoardRepository`/`SqlAlchemyKnowledgeRepository`, реализуют порты
-  поверх `app/tables.py` и `sqlalchemy.Connection`.
-- `app/api.py` — HTTP-роуты (driving adapter), зависит только от `app.domain.ports`, не импортирует
-  SQLAlchemy напрямую; ловит доменные исключения и переводит в `HTTPException`.
+- `app/domains/<domain>/dto.py`, `ports.py` — чистые (dataclasses, `typing.Protocol`), не
+  импортируют ничего из SQLAlchemy/FastAPI.
+- `app/domains/<domain>/models/` — ORM-таблицы (по одному классу на модуль), `repository.py` —
+  адаптер порта поверх `sqlalchemy.Connection`. Это внутренние детали пакета: код вне домена X
+  импортирует только то, что реэкспортировано в `app/domains/X/__init__.py` (порт, адаптер,
+  при необходимости — доменные функции вроде `seed_defaults`), никогда не обращается к
+  `.repository`/`.models`/`.dto` напрямую. Исключение — тесты и `alembic/env.py`, которым нужен
+  весь `Base.metadata` сразу, без привязки к конкретному домену.
+- `app/domains/_base.py` (`Base`, `Id`, `StrId`), `app/domains/_repository.py` (`Repository`-протокол,
+  `SqlAlchemyRepository`-база), `app/domains/errors.py`, `app/domains/ids.py` — общие для всех
+  доменов чистые/инфраструктурные хелперы.
+- `app/api/` — HTTP-роуты (driving adapter), пакет по доменам (`board.py`, `knowledge.py`);
+  зависит только от публичного интерфейса домена, не импортирует SQLAlchemy напрямую. Доменные
+  исключения переводятся в `HTTPException` декоратором `handle_domain_errors` (`app/errors.py`).
 - Без DI-контейнера — репозитории создаются напрямую в роутах (`SqlAlchemyBoardRepository(get_connection())`),
   как и решили в spec 0004.
 - Гранулярность портов — 2 крупных (по доменам: доска и база знаний), не по одному на таблицу.
 
 Принцип продолжает действовать и для нового функционала: новая бизнес-логика с зависимостью от
-инфраструктуры получает порт в `app/domain/ports.py` и адаптер в `app/adapters/`, а не прямой вызов
-SQLAlchemy из `app/api.py`.
+инфраструктуры получает порт в `app/domains/<domain>/ports.py` и адаптер в
+`app/domains/<domain>/repository.py`, а не прямой вызов SQLAlchemy из `app/api/`.
 
 ## Другие принципы жизненного цикла проекта
 

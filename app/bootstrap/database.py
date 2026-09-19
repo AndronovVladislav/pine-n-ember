@@ -5,7 +5,7 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import Connection
 
-from app.db import get_connection, seed_defaults
+from app.db import get_connection
 
 ALEMBIC_INI = Path(__file__).resolve().parent.parent.parent / 'alembic.ini'
 
@@ -25,6 +25,5 @@ def bootstrap_database() -> None:
     conn = get_connection()
     try:
         check_schema_is_current(conn)
-        seed_defaults(conn)
     finally:
         conn.close()

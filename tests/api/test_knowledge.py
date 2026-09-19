@@ -1,21 +1,21 @@
 import pytest
 from sqlalchemy import func, select
 
-from app.tables import blocks, concepts, topics
+from app.domains.knowledge import models as knowledge_models
 
 
 def block_row_as_dict(conn, block_id):
-    row = conn.execute(select(blocks).where(blocks.c.id == block_id)).one()
+    row = conn.execute(select(knowledge_models.Block).where(knowledge_models.Block.id == block_id)).one()
     return {k: v for k, v in row._mapping.items() if k != 'id'}
 
 
 def topic_row_as_dict(conn, topic_id):
-    row = conn.execute(select(topics).where(topics.c.id == topic_id)).one()
+    row = conn.execute(select(knowledge_models.Topic).where(knowledge_models.Topic.id == topic_id)).one()
     return {k: v for k, v in row._mapping.items() if k != 'id'}
 
 
 def concept_row_as_dict(conn, concept_id):
-    row = conn.execute(select(concepts).where(concepts.c.id == concept_id)).one()
+    row = conn.execute(select(knowledge_models.Concept).where(knowledge_models.Concept.id == concept_id)).one()
     return {k: v for k, v in row._mapping.items() if k != 'id'}
 
 
@@ -200,7 +200,9 @@ class TestDeleteTopic:
         assert response.status_code == 204
 
         remaining = db_connection.execute(
-            select(func.count()).select_from(concepts).where(concepts.c.topic_id == topic['id'])
+            select(func.count())
+            .select_from(knowledge_models.Concept)
+            .where(knowledge_models.Concept.topic_id == topic['id'])
         ).scalar_one()
         assert remaining == 0
 

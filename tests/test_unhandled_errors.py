@@ -1,6 +1,6 @@
 import pytest
 
-import app.adapters.knowledge_repository as knowledge_repository_module
+import app.domains.knowledge.repository as knowledge_repository_module
 
 
 @pytest.mark.spec('0002')
@@ -16,8 +16,9 @@ class TestUnhandledExceptionHandler:
         Ожидание: POST /api/topics -> 500, тело ответа не содержит текст оригинальной ошибки
         ("boom from gen_id"), сервер остаётся отвечать на следующий запрос
 
-        Примечание (spec 0010): точка внедрения ошибки переехала вместе с генерацией id из
-        app.api в app.adapters.knowledge_repository при переходе на гексагональную архитектуру -
+        Примечание (spec 0010, обновлено в spec 0011): точка внедрения ошибки переехала вместе с
+        генерацией id сначала из app.api в app.adapters.knowledge_repository (spec 0010), затем в
+        app.domains.knowledge.repository при переходе на закрытые доменные пакеты (spec 0011) -
         сам тест (сценарий и проверки) не изменился.
         """
         client = client_allow_server_errors

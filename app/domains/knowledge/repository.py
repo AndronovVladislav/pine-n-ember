@@ -31,7 +31,8 @@ def _reposition_in_parent(conn, table: Table, parent_col: Column, item_id: str, 
     сдвигая позиции остальных, и возвращает итоговую (зажатую в границы списка) позицию."""
     where = parent_col.is_(None) if parent_value is None else parent_col == parent_value
     siblings = [
-        r.id for r in conn.execute(select(table.c.id).where(where, table.c.id != item_id).order_by(table.c.position))
+        row.id
+        for row in conn.execute(select(table.c.id).where(where, table.c.id != item_id).order_by(table.c.position))
     ]
     index = max(0, min(index, len(siblings)))
     siblings.insert(index, item_id)
@@ -92,7 +93,7 @@ class SqlAlchemyKnowledgeRepository(SqlAlchemyRepository):
 
     def reorder_blocks(self, keys: list[str]) -> None:
         conn = self._conn
-        existing = {r.id for r in conn.execute(select(models.Block.id))}
+        existing = {row.id for row in conn.execute(select(models.Block.id))}
         if set(keys) != existing:
             raise InvalidOperation('keys must match existing blocks exactly')
         for position, block_id in enumerate(keys):
@@ -122,7 +123,7 @@ class SqlAlchemyKnowledgeRepository(SqlAlchemyRepository):
         *,
         name: str | None = None,
         description: str | None = None,
-        block_id=UNSET,
+        block_id: str | object = UNSET,
         position: int | None = None,
     ) -> Topic:
         conn = self._conn
@@ -171,7 +172,7 @@ class SqlAlchemyKnowledgeRepository(SqlAlchemyRepository):
         concept_rows = conn.execute(
             select(models.Concept).where(models.Concept.topic_id == topic_id).order_by(models.Concept.position)
         )
-        return _topic_from_row(row, [_concept_from_row(r) for r in concept_rows])
+        return _topic_from_row(row, [_concept_from_row(concept_row) for concept_row in concept_rows])
 
     def delete_topic(self, topic_id: str) -> None:
         self._conn.execute(delete(models.Topic).where(models.Topic.id == topic_id))
@@ -202,7 +203,7 @@ class SqlAlchemyKnowledgeRepository(SqlAlchemyRepository):
         *,
         name: str | None = None,
         description: str | None = None,
-        topic_id=UNSET,
+        topic_id: str | object = UNSET,
         position: int | None = None,
     ) -> Concept:
         conn = self._conn

@@ -1,6 +1,3 @@
-import random
-import string
-
 from sqlalchemy import Connection, create_engine, func, insert, select
 from sqlalchemy.engine import Engine
 
@@ -31,10 +28,6 @@ def get_engine() -> Engine:
 
 def get_connection() -> Connection:
     return get_engine().connect()
-
-
-def gen_task_id() -> str:
-    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
 
 
 def seed_defaults(conn: Connection) -> None:

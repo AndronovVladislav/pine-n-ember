@@ -1,7 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class StatusOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     key: str
     label: str
     color: str
@@ -12,6 +14,8 @@ class StatusReorder(BaseModel):
 
 
 class TagOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     key: str
     label: str
     bg: str
@@ -19,6 +23,8 @@ class TagOut(BaseModel):
 
 
 class TaskOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     title: str
     tag: str | None
@@ -47,11 +53,12 @@ class TaskMove(BaseModel):
 
 
 class ConceptOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     topic_id: str
     name: str
     description: str
-    metadata: dict
 
 
 class ConceptCreate(BaseModel):
@@ -67,11 +74,12 @@ class ConceptUpdate(BaseModel):
 
 
 class TopicOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     block_id: str | None
     name: str
     description: str
-    metadata: dict
     concepts: list[ConceptOut] = []
 
 
@@ -89,6 +97,8 @@ class TopicUpdate(BaseModel):
 
 
 class BlockOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     name: str
     position: int

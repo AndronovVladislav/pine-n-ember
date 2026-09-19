@@ -92,20 +92,20 @@
     <div class="modal">
         <h3>Новая задача</h3>
         <div class="field">
-            <label>Название</label>
+            <label for="input-title">Название</label>
             <input type="text" id="input-title" placeholder="Например: разобрать WAL">
         </div>
         <div class="field">
-            <label>Тег</label>
+            <label for="input-tag">Тег</label>
             <input type="text" id="input-tag" list="tag-options" placeholder="work, личное, или свой">
             <datalist id="tag-options"></datalist>
         </div>
         <div class="field">
-            <label>Дата</label>
+            <label for="input-due">Дата</label>
             <input type="text" id="input-due" placeholder="например: пт, сегодня, ср">
         </div>
         <div class="field">
-            <label>Статус</label>
+            <label for="input-status">Статус</label>
             <input type="text" id="input-status" list="status-options" placeholder="Черновик, В работе, или свой">
             <datalist id="status-options"></datalist>
         </div>
@@ -120,15 +120,15 @@
     <div class="modal">
         <h3 id="topic-modal-title">Новая тема</h3>
         <div class="field">
-            <label>Название</label>
+            <label for="input-topic-name">Название</label>
             <input type="text" id="input-topic-name" placeholder="Например: API">
         </div>
         <div class="field">
-            <label>Описание</label>
+            <label for="input-topic-description">Описание</label>
             <input type="text" id="input-topic-description" placeholder="Коротко, о чём эта тема">
         </div>
         <div class="field">
-            <label>Блок</label>
+            <label for="input-topic-block">Блок</label>
             <select id="input-topic-block">
                 <option value="">без блока</option>
             </select>
@@ -144,11 +144,11 @@
     <div class="modal">
         <h3 id="concept-modal-title">Новое понятие</h3>
         <div class="field">
-            <label>Название</label>
+            <label for="input-concept-name">Название</label>
             <input type="text" id="input-concept-name" placeholder="Например: Definition">
         </div>
         <div class="field">
-            <label>Описание</label>
+            <label for="input-concept-description">Описание</label>
             <input type="text" id="input-concept-description" placeholder="Коротко, что это за понятие">
         </div>
         <div class="modal-actions">
@@ -162,7 +162,7 @@
     <div class="modal">
         <h3 id="block-modal-title">Новый блок</h3>
         <div class="field">
-            <label>Название</label>
+            <label for="input-block-name">Название</label>
             <input type="text" id="input-block-name" placeholder="Например: Backend">
         </div>
         <div class="modal-actions">

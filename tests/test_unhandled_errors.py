@@ -1,6 +1,6 @@
 import pytest
 
-import app.api as api_module
+import app.adapters.knowledge_repository as knowledge_repository_module
 
 
 @pytest.mark.spec('0002')
@@ -15,13 +15,17 @@ class TestUnhandledExceptionHandler:
 
         Ожидание: POST /api/topics -> 500, тело ответа не содержит текст оригинальной ошибки
         ("boom from gen_id"), сервер остаётся отвечать на следующий запрос
+
+        Примечание (spec 0010): точка внедрения ошибки переехала вместе с генерацией id из
+        app.api в app.adapters.knowledge_repository при переходе на гексагональную архитектуру -
+        сам тест (сценарий и проверки) не изменился.
         """
         client = client_allow_server_errors
 
         def broken_gen_id():
             raise RuntimeError('boom from gen_id')
 
-        monkeypatch.setattr(api_module, 'gen_id', broken_gen_id)
+        monkeypatch.setattr(knowledge_repository_module, 'gen_id', broken_gen_id)
 
         response = client.post('/api/topics', json={'name': 'git-helper'})
 

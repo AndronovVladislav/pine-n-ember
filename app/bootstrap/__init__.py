@@ -1,13 +1,14 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
-from app.bootstrap.api import bootstrap_api
+from app.api import router
 from app.bootstrap.database import bootstrap_database
-from app.bootstrap.errors import bootstrap_errors
-from app.bootstrap.health import bootstrap_health
-from app.bootstrap.logging import bootstrap_logging
-from app.bootstrap.static import bootstrap_static
+from app.errors import unhandled_exception_handler
+from app.health import router as health_router
+from app.logging_config import configure_logging
+from app.settings import settings
 
 
 @asynccontextmanager
@@ -17,10 +18,10 @@ async def lifespan(app: FastAPI):
 
 
 def build_app() -> FastAPI:
-    bootstrap_logging()
+    configure_logging(settings.LOG_LEVEL, settings.LOG_FORMAT)
     app = FastAPI(title='Мой трекер', lifespan=lifespan)
-    bootstrap_errors(app)
-    bootstrap_api(app)
-    bootstrap_health(app)
-    bootstrap_static(app)
+    app.add_exception_handler(Exception, unhandled_exception_handler)
+    app.include_router(router)
+    app.include_router(health_router)
+    app.mount('/', StaticFiles(directory='static', html=True), name='static')
     return app

@@ -346,8 +346,21 @@ async function addTask() {
 document.getElementById('overlay').addEventListener('click', (e) => {
     if (e.target.id === 'overlay') closeModal();
 });
+const MODAL_CLOSERS = {
+    'overlay': closeModal,
+    'topic-overlay': closeTopicModal,
+    'concept-overlay': closeConceptModal,
+    'block-overlay': closeBlockModal,
+};
+
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key !== 'Escape') return;
+    for (const [overlayId, close] of Object.entries(MODAL_CLOSERS)) {
+        if (document.getElementById(overlayId).classList.contains('open')) {
+            close();
+            return;
+        }
+    }
 });
 
 function openDetail(taskId) {
@@ -371,19 +384,19 @@ function renderDetail(taskId) {
     <input class="detail-title" id="detail-title" value="${escapeAttr(task.title)}" placeholder="Название задачи">
     <div class="detail-row">
       <div class="detail-field">
-        <label>Тег</label>
+        <label for="detail-tag">Тег</label>
         <input type="text" id="detail-tag" list="tag-options" value="${escapeAttr(tag ? tag.label : '')}">
       </div>
       <div class="detail-field">
-        <label>Статус</label>
+        <label for="detail-status">Статус</label>
         <input type="text" id="detail-status" list="status-options" value="${escapeAttr(status.label)}">
       </div>
       <div class="detail-field">
-        <label>Дата</label>
+        <label for="detail-due">Дата</label>
         <input type="text" id="detail-due" value="${escapeAttr(task.due || '')}">
       </div>
     </div>
-    <p class="detail-desc-label">Описание</p>
+    <label for="detail-description" class="detail-desc-label">Описание</label>
     <textarea class="detail-desc" id="detail-description" placeholder="Коротко опиши, что нужно сделать...">${escapeHtml(task.description || '')}</textarea>
     <div class="detail-footer">
       <button class="detail-delete" onclick="deleteTaskFromDetail('${task.id}')">${trashIcon(14)} Удалить задачу</button>

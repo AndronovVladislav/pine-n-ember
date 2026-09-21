@@ -2,7 +2,7 @@ from sqlalchemy import delete, func, insert, select, update
 
 from app.domains._repository import SqlAlchemyRepository
 from app.domains.board import models
-from app.domains.board.dto import Status, Tag, Task
+from app.domains.board.dto import Queue, Status, Task
 from app.domains.errors import InvalidOperation, NotFound
 from app.domains.ids import gen_id, next_color, slug
 
@@ -10,9 +10,9 @@ from app.domains.ids import gen_id, next_color, slug
 def _task_from_row(row) -> Task:
     return Task(
         id=row.id,
+        number=row.number,
         title=row.title,
-        tag=row.tag_key,
-        due=row.due or '',
+        queue=row.queue_key,
         status=row.status_key,
         description=row.description or '',
     )
@@ -44,43 +44,43 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         conn.execute(insert(models.Status).values(key=key, label=label, color=color, position=max_pos + 1))
         return key
 
-    def _resolve_tag(self, raw_label: str | None) -> str | None:
+    def _resolve_queue(self, raw_label: str | None) -> str | None:
         conn = self._conn
         label = (raw_label or '').strip()
         if not label:
             return None
 
         found = conn.execute(
-            select(models.Tag.key).where(
-                (func.lower(models.Tag.label) == label.lower()) | (models.Tag.key == slug(label))
+            select(models.Queue.key).where(
+                (func.lower(models.Queue.label) == label.lower()) | (models.Queue.key == slug(label))
             )
         ).first()
         if found:
             return found.key
 
-        count = conn.execute(select(func.count()).select_from(models.Tag)).scalar_one()
+        count = conn.execute(select(func.count()).select_from(models.Queue)).scalar_one()
         key = slug(label) or gen_id()
         bg = next_color(count) + '4d'
         text = next_color(count)
-        conn.execute(insert(models.Tag).values(key=key, label=label, bg=bg, text_color=text))
+        conn.execute(insert(models.Queue).values(key=key, label=label.upper(), bg=bg, text_color=text))
         return key
 
-    def list_board(self) -> tuple[list[Status], list[Tag], list[Task]]:
+    def list_board(self) -> tuple[list[Status], list[Queue], list[Task]]:
         conn = self._conn
         status_list = [
             Status(key=row.key, label=row.label, color=row.color)
             for row in conn.execute(select(models.Status).order_by(models.Status.position))
         ]
-        tag_list = [
-            Tag(key=row.key, label=row.label, bg=row.bg, text=row.text_color)
-            for row in conn.execute(select(models.Tag))
+        queue_list = [
+            Queue(key=row.key, label=row.label, bg=row.bg, text=row.text_color)
+            for row in conn.execute(select(models.Queue))
         ]
         task_list = [_task_from_row(row) for row in conn.execute(select(models.Task).order_by(models.Task.position))]
-        return status_list, tag_list, task_list
+        return status_list, queue_list, task_list
 
-    def create_task(self, title: str, tag_label: str | None, due: str, status_label: str | None) -> Task:
+    def create_task(self, title: str, queue_label: str | None, status_label: str | None) -> Task:
         conn = self._conn
-        tag_key = self._resolve_tag(tag_label)
+        queue_key = self._resolve_queue(queue_label)
         status_key = self._resolve_status(status_label)
         task_id = gen_id()
         max_pos = conn.execute(
@@ -90,8 +90,7 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
             insert(models.Task).values(
                 id=task_id,
                 title=title,
-                tag_key=tag_key,
-                due=due.strip(),
+                queue_key=queue_key,
                 status_key=status_key,
                 description='',
                 position=max_pos + 1,
@@ -106,9 +105,8 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         task_id: str,
         *,
         title: str | None = None,
-        tag_label: str | None = None,
+        queue_label: str | None = None,
         status_label: str | None = None,
-        due: str | None = None,
         description: str | None = None,
     ) -> Task:
         conn = self._conn
@@ -120,17 +118,13 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         if title is not None:
             new_title = title.strip() or row.title
 
-        tag_key = row.tag_key
-        if tag_label is not None:
-            tag_key = self._resolve_tag(tag_label)
+        queue_key = row.queue_key
+        if queue_label is not None:
+            queue_key = self._resolve_queue(queue_label)
 
         status_key = row.status_key
         if status_label is not None:
             status_key = self._resolve_status(status_label)
-
-        new_due = row.due
-        if due is not None:
-            new_due = due.strip()
 
         new_description = row.description
         if description is not None:
@@ -139,7 +133,7 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         conn.execute(
             update(models.Task)
             .where(models.Task.id == task_id)
-            .values(title=new_title, tag_key=tag_key, due=new_due, status_key=status_key, description=new_description)
+            .values(title=new_title, queue_key=queue_key, status_key=status_key, description=new_description)
         )
         conn.commit()
         row = conn.execute(select(models.Task).where(models.Task.id == task_id)).one()

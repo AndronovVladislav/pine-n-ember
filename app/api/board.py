@@ -15,10 +15,10 @@ def _board_repo() -> BoardRepository:
 @router.get('/board')
 def get_board() -> dict:
     with _board_repo() as repo:
-        status_list, tag_list, task_list = repo.list_board()
+        status_list, queue_list, task_list = repo.list_board()
         return {
             'statuses': [{'key': status.key, 'label': status.label, 'color': status.color} for status in status_list],
-            'tags': [{'key': tag.key, 'label': tag.label, 'bg': tag.bg, 'text': tag.text} for tag in tag_list],
+            'queues': [{'key': q.key, 'label': q.label, 'bg': q.bg, 'text': q.text} for q in queue_list],
             'tasks': [TaskOut.model_validate(task).model_dump() for task in task_list],
         }
 
@@ -28,20 +28,25 @@ def create_task(payload: TaskCreate) -> TaskOut:
     title = payload.title.strip()
     if not title:
         raise HTTPException(400, 'title is required')
+    queue = (payload.queue or '').strip()
+    if not queue:
+        raise HTTPException(400, 'queue is required')
     with _board_repo() as repo:
-        return repo.create_task(title, payload.tag, payload.due, payload.status)
+        return repo.create_task(title, queue, payload.status)
 
 
 @router.patch('/tasks/{task_id}')
 @handle_domain_errors
 def update_task(task_id: str, payload: TaskUpdate) -> TaskOut:
+    queue_provided = 'queue' in payload.model_fields_set
+    if queue_provided and (payload.queue is None or not payload.queue.strip()):
+        raise HTTPException(400, 'queue cannot be unset')
     with _board_repo() as repo:
         return repo.update_task(
             task_id,
             title=payload.title,
-            tag_label=payload.tag,
+            queue_label=payload.queue,
             status_label=payload.status,
-            due=payload.due,
             description=payload.description,
         )
 

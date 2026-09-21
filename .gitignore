@@ -4,3 +4,4 @@ __pycache__/
 tracker.db
 /.idea
 backups/
+/.DS_Store

@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from app.domains.errors import InvalidOperation, NotFound
+from app.domains.errors import ExternalServiceUnavailable, InvalidOperation, NotFound
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +23,13 @@ def handle_domain_errors[**P, R](fn: Callable[P, R]) -> Callable[P, R]:
     def wrapper(*args: Any, **kwargs: Any) -> R:
         try:
             return fn(*args, **kwargs)
-        except (NotFound, InvalidOperation) as exc:
+        except (NotFound, InvalidOperation, ExternalServiceUnavailable) as exc:
             match exc:
                 case NotFound():
                     raise HTTPException(404, str(exc)) from exc
                 case InvalidOperation():
                     raise HTTPException(400, str(exc)) from exc
+                case ExternalServiceUnavailable():
+                    raise HTTPException(502, str(exc)) from exc
 
     return wrapper

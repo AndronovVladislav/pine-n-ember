@@ -17,6 +17,10 @@ class StatusReorder(BaseModel):
     keys: list[str]
 
 
+class StatusRename(BaseModel):
+    label: str
+
+
 class TagOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

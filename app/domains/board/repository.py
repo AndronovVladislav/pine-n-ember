@@ -184,3 +184,22 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         conn.execute(delete(models.Task).where(models.Task.status_key == status_key))
         conn.execute(delete(models.Status).where(models.Status.key == status_key))
         conn.commit()
+
+    def rename_status(self, status_key: str, label: str) -> Status:
+        conn = self._conn
+        label = label.strip()
+        if not label:
+            raise InvalidOperation('label is required')
+        row = conn.execute(select(models.Status).where(models.Status.key == status_key)).first()
+        if not row:
+            raise NotFound(f'status {status_key!r} not found')
+        duplicate = conn.execute(
+            select(models.Status.key).where(
+                func.lower(models.Status.label) == label.lower(), models.Status.key != status_key
+            )
+        ).first()
+        if duplicate:
+            raise InvalidOperation(f'status with label {label!r} already exists')
+        conn.execute(update(models.Status).where(models.Status.key == status_key).values(label=label))
+        conn.commit()
+        return Status(key=row.key, label=label, color=row.color)

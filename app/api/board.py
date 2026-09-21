@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from app.db import get_connection
 from app.domains.board import BoardRepository, SqlAlchemyBoardRepository
 from app.errors import handle_domain_errors
-from app.schemas import StatusReorder, TaskCreate, TaskMove, TaskOut, TaskUpdate
+from app.schemas import StatusOut, StatusRename, StatusReorder, TaskCreate, TaskMove, TaskOut, TaskUpdate
 
 router = APIRouter()
 
@@ -72,3 +72,10 @@ def reorder_statuses(payload: StatusReorder) -> dict:
 def delete_status(status_key: str) -> None:
     with _board_repo() as repo:
         repo.delete_status(status_key)
+
+
+@router.patch('/statuses/{status_key}')
+@handle_domain_errors
+def rename_status(status_key: str, payload: StatusRename) -> StatusOut:
+    with _board_repo() as repo:
+        return repo.rename_status(status_key, payload.label)

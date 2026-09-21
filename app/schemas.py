@@ -1,4 +1,8 @@
-from pydantic import BaseModel, ConfigDict
+import datetime
+from decimal import Decimal
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StatusOut(BaseModel):
@@ -114,3 +118,92 @@ class BlockUpdate(BaseModel):
 
 class BlockReorder(BaseModel):
     keys: list[str]
+
+
+class CategoryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    kind: str
+    name: str
+
+
+class CategoryCreate(BaseModel):
+    name: str
+
+
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+
+
+class OperationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    kind: str
+    category_id: str
+    amount: Decimal
+    currency: str
+    amount_rub: Decimal
+    rate: Decimal
+    date: datetime.date
+
+
+class ExpenseOperationCreate(BaseModel):
+    category_id: str
+    amount: Decimal = Field(gt=0)
+    currency: Literal['BYN', 'RUB']
+    date: datetime.date
+
+
+class IncomeOperationCreate(BaseModel):
+    category_id: str
+    amount: Decimal = Field(gt=0)
+    currency: Literal['BYN', 'RUB']
+    date: datetime.date
+
+
+class OperationUpdate(BaseModel):
+    category_id: str | None = None
+    amount: Decimal | None = Field(default=None, gt=0)
+    currency: Literal['BYN', 'RUB'] | None = None
+    date: datetime.date | None = None
+
+
+class CategoryBreakdownOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    category_id: str
+    category_name: str
+    amount_rub: Decimal
+
+
+class BalancePointOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    date: datetime.date
+    cumulative_rub: Decimal
+
+
+class RecentOperationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    kind: str
+    category_name: str
+    amount: Decimal
+    currency: str
+    amount_rub: Decimal
+    date: datetime.date
+
+
+class FinanceDashboardOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    income_total_rub: Decimal
+    expense_total_rub: Decimal
+    balance_rub: Decimal
+    expense_by_category: list[CategoryBreakdownOut]
+    income_by_category: list[CategoryBreakdownOut]
+    balance_series: list[BalancePointOut]
+    recent_operations: list[RecentOperationOut]

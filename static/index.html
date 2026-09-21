@@ -22,6 +22,7 @@
             <nav class="tabs">
                 <a class="tab active" id="tab-board" href="#">Доска</a>
                 <a class="tab" id="tab-knowledge" href="#/knowledge">База знаний</a>
+                <a class="tab" id="tab-finance" href="#/finance">Финансы</a>
             </nav>
         </div>
         <div class="header-actions">
@@ -76,6 +77,105 @@
     </div>
 
     <div id="knowledge-content"></div>
+</section>
+
+<section id="finance-view" class="hidden">
+    <div class="header">
+        <div></div>
+        <div class="header-actions">
+            <div class="finance-custom-range hidden" id="finance-custom-range">
+                <label class="sr-only" for="finance-range-from">Начало периода</label>
+                <input type="date" id="finance-range-from">
+                <label class="sr-only" for="finance-range-to">Конец периода</label>
+                <input type="date" id="finance-range-to">
+                <button type="button" class="btn" id="finance-range-apply" onclick="applyFinanceCustomRange()">Применить</button>
+            </div>
+            <div class="range-control" role="group" aria-label="Период" id="finance-range-control">
+                <button type="button" class="range-btn active" data-range="month" onclick="setFinanceRangePreset('month')">Месяц</button>
+                <button type="button" class="range-btn" data-range="30d" onclick="setFinanceRangePreset('30d')">30 дней</button>
+                <button type="button" class="range-btn" data-range="custom" onclick="showFinanceCustomRange()">Диапазон…</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="finance-panel-card" id="finance-quick-add">
+        <h2 class="finance-section-title">Новая операция</h2>
+        <form class="finance-ledger-row" id="finance-quick-add-form" onsubmit="return handleFinanceSubmit(event)">
+            <div class="finance-ledger-field finance-ledger-radio" role="radiogroup" aria-label="Тип операции">
+                <span>Тип</span>
+                <div class="finance-ledger-radio-options">
+                    <label><input type="radio" name="finance-kind" value="expense" checked onchange="setFinanceKind('expense')"> расход</label>
+                    <label><input type="radio" name="finance-kind" value="income" onchange="setFinanceKind('income')"> доход</label>
+                </div>
+            </div>
+            <label class="finance-ledger-field finance-ledger-grow">
+                <span>Категория</span>
+                <select id="finance-op-category" onchange="onFinanceCategorySelectChange()"></select>
+            </label>
+            <label class="finance-ledger-field finance-ledger-grow hidden" id="finance-new-category-field">
+                <span>Название категории</span>
+                <input type="text" id="finance-new-category-name" placeholder="Например: Такси">
+            </label>
+            <label class="finance-ledger-field finance-ledger-amount">
+                <span>Сумма</span>
+                <input type="number" id="finance-op-amount" min="0.01" step="0.01" placeholder="0" required class="mono">
+            </label>
+            <div class="finance-ledger-field finance-ledger-radio" role="radiogroup" aria-label="Валюта">
+                <span>Валюта</span>
+                <div class="finance-ledger-radio-options">
+                    <label><input type="radio" name="finance-currency" value="RUB" checked onchange="setFinanceCurrency('RUB')"> RUB</label>
+                    <label><input type="radio" name="finance-currency" value="BYN" onchange="setFinanceCurrency('BYN')"> BYN</label>
+                </div>
+            </div>
+            <label class="finance-ledger-field">
+                <span>Дата</span>
+                <input type="date" id="finance-op-date" required class="mono">
+            </label>
+            <button type="submit" class="btn primary finance-ledger-submit" id="finance-op-submit">Добавить</button>
+        </form>
+    </div>
+
+    <div id="finance-dashboard-sections">
+        <div class="finance-totals">
+            <div class="finance-stat income">
+                <span class="finance-stat-label">Доходы</span>
+                <strong class="finance-stat-value" id="finance-income-total">0 ₽</strong>
+            </div>
+            <div class="finance-stat expense">
+                <span class="finance-stat-label">Расходы</span>
+                <strong class="finance-stat-value" id="finance-expense-total">0 ₽</strong>
+            </div>
+            <div class="finance-stat balance">
+                <span class="finance-stat-label">Баланс</span>
+                <strong class="finance-stat-value" id="finance-balance-total">0 ₽</strong>
+            </div>
+        </div>
+
+        <div class="finance-grid">
+            <div>
+                <h2 class="finance-section-title">Расходы по категориям</h2>
+                <ul class="finance-cat-list" id="finance-expense-categories"></ul>
+
+                <div class="finance-panel-card">
+                    <h2 class="finance-section-title">Последние операции</h2>
+                    <ul class="finance-recent-list" id="finance-recent-operations"></ul>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="finance-section-title">Баланс нарастающим итогом</h2>
+                <div class="finance-panel-card">
+                    <svg class="finance-spark hidden" id="finance-spark" viewBox="0 0 260 84" preserveAspectRatio="none" fill="none" aria-hidden="true"></svg>
+                    <p class="finance-empty-note" id="finance-spark-empty">Пока нет операций за период</p>
+                </div>
+
+            <h2 class="finance-section-title">Доходы по категориям</h2>
+            <div class="finance-panel-card">
+                <ul class="finance-income-list" id="finance-income-categories"></ul>
+            </div>
+        </div>
+        </div>
+    </div>
 </section>
 
 <section id="detail-view" class="hidden">

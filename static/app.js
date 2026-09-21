@@ -2,10 +2,11 @@ const API = '/api';
 
 let toastTimer = null;
 
-function showToast(message) {
+function showToast(message, type = 'error') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
-    toast.classList.remove('hidden');
+    toast.classList.remove('hidden', 'success', 'error');
+    toast.classList.add(type);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.classList.add('hidden'), 3200);
 }
@@ -967,21 +968,340 @@ document.getElementById('block-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'block-overlay') closeBlockModal();
 });
 
+const FINANCE_EMPTY_NOTE = 'Пока нет операций за период';
+const FINANCE_CATEGORY_COLORS = ['#FF9E64', '#FFB454', '#7FA37B', '#5FA88E', '#E8A87C', '#D97B5F', '#B98F5F', '#8FB89A'];
+
+const financeState = {
+    kind: 'expense',
+    currency: 'RUB',
+    range: {from: null, to: null},
+    categories: {expense: [], income: []},
+    dashboard: null,
+    categoryColors: {},
+};
+
+function financeCategoryColor(categoryId) {
+    if (!financeState.categoryColors[categoryId]) {
+        const used = Object.keys(financeState.categoryColors).length;
+        financeState.categoryColors[categoryId] = FINANCE_CATEGORY_COLORS[used % FINANCE_CATEGORY_COLORS.length];
+    }
+    return financeState.categoryColors[categoryId];
+}
+
+function financeEmptyItem() {
+    const li = document.createElement('li');
+    li.className = 'finance-empty';
+    li.textContent = FINANCE_EMPTY_NOTE;
+    return li;
+}
+
+function formatRub(value) {
+    return `${new Intl.NumberFormat('ru-RU').format(parseFloat(value))} ₽`;
+}
+
+function financeToday() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function financePresetRange(preset) {
+    const now = new Date();
+    const to = financeToday();
+    if (preset === '30d') {
+        const from = new Date(now.getTime() - 29 * 86400000).toISOString().slice(0, 10);
+        return {from, to};
+    }
+    const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    return {from, to};
+}
+
+function setFinanceRangePreset(preset) {
+    document.getElementById('finance-custom-range').classList.add('hidden');
+    document.querySelectorAll('#finance-range-control .range-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.range === preset);
+    });
+    financeState.range = financePresetRange(preset);
+    refreshFinanceDashboard();
+}
+
+function showFinanceCustomRange() {
+    document.querySelectorAll('#finance-range-control .range-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.range === 'custom');
+    });
+    document.getElementById('finance-range-from').value = financeState.range.from || financeToday();
+    document.getElementById('finance-range-to').value = financeState.range.to || financeToday();
+    document.getElementById('finance-custom-range').classList.remove('hidden');
+}
+
+function applyFinanceCustomRange() {
+    const from = document.getElementById('finance-range-from').value;
+    const to = document.getElementById('finance-range-to').value;
+    if (!from || !to) return;
+    financeState.range = {from, to};
+    refreshFinanceDashboard();
+}
+
+function setFinanceKind(kind) {
+    financeState.kind = kind;
+    renderFinanceCategoryOptions();
+}
+
+function setFinanceCurrency(currency) {
+    financeState.currency = currency;
+}
+
+function onFinanceCategorySelectChange() {
+    const select = document.getElementById('finance-op-category');
+    const isNew = select.value === '__new__';
+    document.getElementById('finance-new-category-field').classList.toggle('hidden', !isNew);
+    document.getElementById('finance-new-category-name').required = isNew;
+}
+
+function handleFinanceSubmit(event) {
+    event.preventDefault();
+    submitFinanceOperation();
+    return false;
+}
+
+function renderFinanceCategoryOptions() {
+    const select = document.getElementById('finance-op-category');
+    const categories = financeState.categories[financeState.kind];
+    select.innerHTML = categories.map((c) => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)}</option>`).join('')
+        + '<option value="__new__">+ новая категория</option>';
+    onFinanceCategorySelectChange();
+}
+
+async function loadFinanceCategories() {
+    const [expense, income] = await Promise.all([
+        api('/finance/expense-categories'),
+        api('/finance/income-categories'),
+    ]);
+    financeState.categories.expense = expense;
+    financeState.categories.income = income;
+    renderFinanceCategoryOptions();
+}
+
+async function submitFinanceOperation() {
+    const amount = document.getElementById('finance-op-amount').value;
+    const date = document.getElementById('finance-op-date').value;
+    const select = document.getElementById('finance-op-category');
+    if (!amount || !date) return;
+
+    try {
+        let categoryId = select.value;
+        if (categoryId === '__new__') {
+            const name = document.getElementById('finance-new-category-name').value.trim();
+            if (!name) return;
+            const path = financeState.kind === 'expense' ? '/finance/expense-categories' : '/finance/income-categories';
+            const category = await api(path, {method: 'POST', body: JSON.stringify({name})});
+            categoryId = category.id;
+        }
+
+        const endpoint = financeState.kind === 'expense' ? '/finance/expenses' : '/finance/incomes';
+        await api(endpoint, {
+            method: 'POST',
+            body: JSON.stringify({category_id: categoryId, amount: Number(amount), currency: financeState.currency, date}),
+        });
+
+        document.getElementById('finance-op-amount').value = '';
+        document.getElementById('finance-new-category-name').value = '';
+        showToast('Операция добавлена', 'success');
+        await loadFinanceCategories();
+        select.value = categoryId;
+        onFinanceCategorySelectChange();
+        await refreshFinanceDashboard();
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+    }
+}
+
+function findFinanceCategoryName(categoryId) {
+    const dashboard = financeState.dashboard;
+    if (!dashboard) return '';
+    const row = [...dashboard.expense_by_category, ...dashboard.income_by_category].find((r) => r.category_id === categoryId);
+    return row ? row.category_name : '';
+}
+
+async function renameFinanceCategory(categoryId) {
+    const currentName = findFinanceCategoryName(categoryId);
+    const name = prompt('Новое название категории', currentName);
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === currentName) return;
+
+    try {
+        await api(`/finance/categories/${categoryId}`, {method: 'PATCH', body: JSON.stringify({name: trimmed})});
+        showToast('Категория переименована', 'success');
+        await loadFinanceCategories();
+        await refreshFinanceDashboard();
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+    }
+}
+
+async function deleteFinanceCategory(categoryId) {
+    const name = findFinanceCategoryName(categoryId);
+    if (!confirm(`Удалить категорию «${name}»? Все операции этой категории тоже будут удалены.`)) return;
+
+    try {
+        await api(`/finance/categories/${categoryId}`, {method: 'DELETE'});
+        showToast('Категория удалена', 'success');
+        await loadFinanceCategories();
+        await refreshFinanceDashboard();
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+    }
+}
+
+function financeCategoryRowHtml(row, total) {
+    const color = financeCategoryColor(row.category_id);
+    const pct = total > 0 ? Math.round((parseFloat(row.amount_rub) / total) * 100) : 0;
+    return `
+        <li style="--cat-color:${color}">
+            <span class="finance-cat-name-wrap">
+                <span class="finance-cat-name">${escapeHtml(row.category_name)}</span>
+                <button class="finance-cat-edit" type="button" title="Переименовать" onclick="renameFinanceCategory('${row.category_id}')">${editIcon(11)}</button>
+                <button class="finance-cat-edit" type="button" title="Удалить" onclick="deleteFinanceCategory('${row.category_id}')">${trashIcon(11)}</button>
+            </span>
+            <span class="finance-cat-right"><span class="finance-cat-pct">${pct}%</span>${formatRub(row.amount_rub)}</span>
+            <div class="finance-cat-track"><div class="finance-cat-fill" style="width:${pct}%"></div></div>
+        </li>`;
+}
+
+function renderFinanceCategoryList(elementId, breakdown, total) {
+    const list = document.getElementById(elementId);
+    if (breakdown.length === 0) {
+        list.replaceChildren(financeEmptyItem());
+        return;
+    }
+    list.innerHTML = breakdown.map((row) => financeCategoryRowHtml(row, total)).join('');
+}
+
+function renderFinanceRecentOperations(operations) {
+    const list = document.getElementById('finance-recent-operations');
+    if (operations.length === 0) {
+        list.replaceChildren(financeEmptyItem());
+        return;
+    }
+    list.innerHTML = operations.map((op) => {
+        const sign = op.kind === 'expense' ? '−' : '+';
+        const amtClass = op.kind === 'expense' ? 'neg' : 'pos';
+        const meta = op.currency === 'BYN' ? ` · ${op.amount} BYN` : '';
+        return `
+            <li>
+                <span>${escapeHtml(op.category_name)}<span class="finance-recent-meta">${op.date}${meta}</span></span>
+                <span class="finance-amt ${amtClass}">${sign}${formatRub(op.amount_rub)}</span>
+            </li>`;
+    }).join('');
+}
+
+function renderFinanceSparkline(series) {
+    const svg = document.getElementById('finance-spark');
+    const emptyNote = document.getElementById('finance-spark-empty');
+
+    if (series.length < 2) {
+        svg.replaceChildren();
+        svg.classList.add('hidden');
+        emptyNote.classList.remove('hidden');
+        emptyNote.textContent = series.length === 1
+            ? `Баланс на ${series[0].date}: ${formatRub(series[0].cumulative_rub)}`
+            : FINANCE_EMPTY_NOTE;
+        return;
+    }
+
+    svg.classList.remove('hidden');
+    emptyNote.classList.add('hidden');
+    const values = series.map((p) => parseFloat(p.cumulative_rub));
+    const min = Math.min(...values, 0);
+    const max = Math.max(...values, 0);
+    const range = max - min || 1;
+    const width = 260;
+    const height = 84;
+    const points = series.map((p, i) => {
+        const x = (i / (series.length - 1)) * width;
+        const y = height - ((parseFloat(p.cumulative_rub) - min) / range) * height;
+        return [x, y];
+    });
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const polyline = document.createElementNS(ns, 'polyline');
+    polyline.setAttribute('points', points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '));
+    polyline.setAttribute('stroke', '#FF9E64');
+    polyline.setAttribute('stroke-width', '2');
+    polyline.setAttribute('fill', 'none');
+    polyline.setAttribute('stroke-linejoin', 'round');
+    polyline.setAttribute('stroke-linecap', 'round');
+
+    const [lastX, lastY] = points[points.length - 1];
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', lastX.toFixed(1));
+    circle.setAttribute('cy', lastY.toFixed(1));
+    circle.setAttribute('r', '3');
+    circle.setAttribute('fill', '#FF9E64');
+
+    svg.replaceChildren(polyline, circle);
+}
+
+function renderFinanceDashboard(data) {
+    financeState.dashboard = data;
+    document.getElementById('finance-income-total').textContent = formatRub(data.income_total_rub);
+    document.getElementById('finance-expense-total').textContent = formatRub(data.expense_total_rub);
+    document.getElementById('finance-balance-total').textContent = formatRub(data.balance_rub);
+
+    renderFinanceCategoryList('finance-expense-categories', data.expense_by_category, parseFloat(data.expense_total_rub));
+    renderFinanceCategoryList('finance-income-categories', data.income_by_category, parseFloat(data.income_total_rub));
+    renderFinanceRecentOperations(data.recent_operations);
+    renderFinanceSparkline(data.balance_series);
+}
+
+async function refreshFinanceDashboard() {
+    const sections = document.getElementById('finance-dashboard-sections');
+    sections.classList.add('finance-loading');
+    try {
+        const {from, to} = financeState.range;
+        const data = await api(`/finance/dashboard?date_from=${from}&date_to=${to}`);
+        renderFinanceDashboard(data);
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось загрузить данные. Попробуйте ещё раз.');
+    } finally {
+        sections.classList.remove('finance-loading');
+    }
+}
+
+async function initFinanceView() {
+    document.getElementById('subtitle').textContent = '';
+    if (!financeState.range.from) {
+        financeState.range = financePresetRange('month');
+        document.getElementById('finance-op-date').value = financeToday();
+    }
+    await loadFinanceCategories();
+    await refreshFinanceDashboard();
+}
+
 async function handleRoute() {
     const taskMatch = location.hash.match(/^#\/task\/(.+)$/);
     const isKnowledge = location.hash === '#/knowledge';
+    const isFinance = location.hash === '#/finance';
     const appHeader = document.getElementById('app-header');
     const boardView = document.getElementById('board-view');
     const detailView = document.getElementById('detail-view');
     const knowledgeView = document.getElementById('knowledge-view');
+    const financeView = document.getElementById('finance-view');
+    const alignControl = document.getElementById('align-control');
 
     appHeader.classList.remove('hidden');
     boardView.classList.add('hidden');
     detailView.classList.add('hidden');
     knowledgeView.classList.add('hidden');
+    financeView.classList.add('hidden');
+    alignControl.classList.toggle('hidden', isFinance);
 
-    document.getElementById('tab-board').classList.toggle('active', !isKnowledge);
+    document.getElementById('tab-board').classList.toggle('active', !isKnowledge && !isFinance);
     document.getElementById('tab-knowledge').classList.toggle('active', isKnowledge);
+    document.getElementById('tab-finance').classList.toggle('active', isFinance);
 
     if (taskMatch) {
         appHeader.classList.add('hidden');
@@ -990,6 +1310,9 @@ async function handleRoute() {
     } else if (isKnowledge) {
         knowledgeView.classList.remove('hidden');
         await refreshKnowledge();
+    } else if (isFinance) {
+        financeView.classList.remove('hidden');
+        await initFinanceView();
     } else {
         boardView.classList.remove('hidden');
         render();

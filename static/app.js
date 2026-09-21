@@ -150,7 +150,7 @@ function render() {
         head.innerHTML = `
       <span class="column-drag-handle">${dragHandleIcon()}</span>
       <span class="dot" style="background:${st.color}"></span>
-      <span class="column-title">${escapeHtml(st.label)}</span>
+      <span class="column-title" title="Клик — переименовать" onclick="event.stopPropagation(); startRenameStatus(this, '${st.key}')">${escapeHtml(st.label)}</span>
       <span class="column-count">${items.length}</span>
       <button class="column-delete" title="Удалить группу" onclick="deleteStatus('${st.key}')">${trashIcon(14)}</button>
     `;
@@ -311,6 +311,43 @@ async function deleteStatus(statusKey) {
         console.error(err);
         showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
     }
+}
+
+function startRenameStatus(titleEl, statusKey) {
+    const status = getStatus(statusKey);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'column-title-input';
+    input.value = status.label;
+    titleEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const finish = async (commit) => {
+        if (done) return;
+        done = true;
+        const newLabel = input.value.trim();
+        if (commit && newLabel && newLabel !== status.label) {
+            try {
+                await api(`/statuses/${statusKey}`, {method: 'PATCH', body: JSON.stringify({label: newLabel})});
+                await refresh();
+                return;
+            } catch (err) {
+                console.error(err);
+                showToast('Не удалось переименовать статус. Попробуйте ещё раз.');
+            }
+        }
+        render();
+    };
+    input.addEventListener('blur', () => finish(true));
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') input.blur();
+        if (e.key === 'Escape') {
+            done = true;
+            render();
+        }
+    });
 }
 
 function openModal() {

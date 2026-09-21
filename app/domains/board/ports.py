@@ -35,3 +35,7 @@ class BoardRepository(Repository, Protocol):
     def delete_status(self, status_key: str) -> None:
         """Бросает InvalidOperation, если это последний статус."""
         ...
+
+    def rename_status(self, status_key: str, label: str) -> Status:
+        """Бросает NotFound, если статуса нет; InvalidOperation, если label пустой."""
+        ...

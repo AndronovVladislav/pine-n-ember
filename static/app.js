@@ -412,11 +412,15 @@ async function addTask() {
     }
 }
 
+document.getElementById('detail-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'detail-overlay') goToBoard();
+});
 document.getElementById('overlay').addEventListener('click', (e) => {
     if (e.target.id === 'overlay') closeModal();
 });
 const MODAL_CLOSERS = {
     'overlay': closeModal,
+    'detail-overlay': goToBoard,
     'topic-overlay': closeTopicModal,
     'concept-overlay': closeConceptModal,
     'block-overlay': closeBlockModal,
@@ -450,6 +454,7 @@ function renderDetail(taskId) {
     const status = getStatus(task.status);
     const queue = getQueue(task.queue);
     card.innerHTML = `
+    <button class="detail-close" onclick="goToBoard()" aria-label="Закрыть">&times;</button>
     <input class="detail-title" id="detail-title" value="${escapeAttr(task.title)}" placeholder="Название задачи">
     <p class="detail-key mono">TASK-${task.number}</p>
     <div class="detail-row">
@@ -1350,14 +1355,13 @@ async function handleRoute() {
     const isFinance = location.hash === '#/finance';
     const appHeader = document.getElementById('app-header');
     const boardView = document.getElementById('board-view');
-    const detailView = document.getElementById('detail-view');
+    const detailOverlay = document.getElementById('detail-overlay');
     const knowledgeView = document.getElementById('knowledge-view');
     const financeView = document.getElementById('finance-view');
     const alignControl = document.getElementById('align-control');
 
     appHeader.classList.remove('hidden');
     boardView.classList.add('hidden');
-    detailView.classList.add('hidden');
     knowledgeView.classList.add('hidden');
     financeView.classList.add('hidden');
     alignControl.classList.toggle('hidden', isFinance);
@@ -1367,10 +1371,20 @@ async function handleRoute() {
     document.getElementById('tab-finance').classList.toggle('active', isFinance);
 
     if (taskMatch) {
-        appHeader.classList.add('hidden');
-        detailView.classList.remove('hidden');
+        boardView.classList.remove('hidden');
+        render();
+        detailOverlay.classList.remove('closing');
+        detailOverlay.classList.add('open');
         renderDetail(taskMatch[1]);
-    } else if (isKnowledge) {
+        return;
+    }
+    if (detailOverlay.classList.contains('open')) {
+        detailOverlay.classList.remove('open');
+        detailOverlay.classList.add('closing');
+        setTimeout(() => detailOverlay.classList.remove('closing'), 160);
+    }
+
+    if (isKnowledge) {
         knowledgeView.classList.remove('hidden');
         await refreshKnowledge();
     } else if (isFinance) {

@@ -848,7 +848,7 @@ body::before {
 
 .detail-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 12px;
     margin: 16px 0;
 }
@@ -860,7 +860,8 @@ body::before {
     margin-bottom: 6px;
 }
 
-.detail-field input {
+.detail-field input,
+.detail-field select {
     width: 100%;
     background: var(--card);
     border: 1px solid var(--border-strong);
@@ -871,7 +872,8 @@ body::before {
     font-family: inherit;
 }
 
-.detail-field input:focus {
+.detail-field input:focus,
+.detail-field select:focus {
     outline: none;
     border-color: var(--text-secondary);
 }

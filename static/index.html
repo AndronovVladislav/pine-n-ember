@@ -201,6 +201,16 @@
             <input type="text" id="input-status" list="status-options" placeholder="Черновик, В работе, или свой">
             <datalist id="status-options"></datalist>
         </div>
+        <div class="field">
+            <label for="input-priority">Приоритет</label>
+            <select id="input-priority">
+                <option value="critical">Критичный</option>
+                <option value="high">Высокий</option>
+                <option value="medium">Средний</option>
+                <option value="low" selected>Низкий</option>
+                <option value="lowest">Самый низкий</option>
+            </select>
+        </div>
         <div class="modal-actions">
             <button class="btn" onclick="closeModal()">Отмена</button>
             <button class="btn primary" onclick="addTask()">Добавить</button>

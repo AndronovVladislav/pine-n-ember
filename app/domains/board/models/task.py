@@ -12,3 +12,4 @@ class Task(Base):
     status_key: Mapped[str] = mapped_column(ForeignKey('statuses.key'))
     description: Mapped[str | None] = mapped_column(server_default='')
     position: Mapped[int] = mapped_column(server_default='0')
+    priority: Mapped[str] = mapped_column(server_default='low')

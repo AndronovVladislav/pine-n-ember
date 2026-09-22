@@ -109,6 +109,7 @@ class TestCreateTask:
             'status_key': body['status'],
             'description': '',
             'position': 0,
+            'priority': 'low',
         }
 
     def test_gets_sequential_number(self, client, db_connection):
@@ -128,6 +129,7 @@ class TestCreateTask:
             'status_key': first['status'],
             'description': '',
             'position': 0,
+            'priority': 'low',
         }
         assert task_row_as_dict(db_connection, second['id']) == {
             'number': second['number'],
@@ -136,6 +138,7 @@ class TestCreateTask:
             'status_key': second['status'],
             'description': '',
             'position': 1,
+            'priority': 'low',
         }
         assert isinstance(first['number'], int)
         assert second['number'] > first['number']
@@ -159,6 +162,7 @@ class TestCreateTask:
             'status_key': body['status'],
             'description': '',
             'position': 0,
+            'priority': 'low',
         }
         assert body['number'] != 999999
 
@@ -203,6 +207,7 @@ class TestUpdateTask:
             'status_key': task['status'],
             'description': '',
             'position': 0,
+            'priority': 'low',
         }
 
     def test_queue_cannot_be_unset(self, client):
@@ -216,3 +221,94 @@ class TestUpdateTask:
 
         assert client.patch(f'/api/tasks/{task["id"]}', json={'queue': None}).status_code == 400
         assert client.patch(f'/api/tasks/{task["id"]}', json={'queue': '   '}).status_code == 400
+
+
+@pytest.mark.spec('0017')
+class TestTaskPriority:
+    def test_defaults_to_low_when_not_passed(self, client, db_connection):
+        """
+        Тест проверяет создание задачи без явного приоритета.
+
+        Ожидание: приоритет записывается как 'low' - значение по умолчанию, остальные поля
+        записаны как обычно
+        """
+        response = client.post('/api/tasks', json={'title': 'Задача', 'queue': 'work'})
+        assert response.status_code == 200
+        body = response.json()
+        assert body['priority'] == 'low'
+
+        assert task_row_as_dict(db_connection, body['id']) == {
+            'number': body['number'],
+            'title': 'Задача',
+            'queue_key': 'work',
+            'status_key': body['status'],
+            'description': '',
+            'position': 0,
+            'priority': 'low',
+        }
+
+    def test_gets_priority_passed_on_create(self, client, db_connection):
+        """
+        Тест проверяет создание задачи с явно переданным приоритетом.
+
+        Ожидание: в БД и в ответе API записан ровно переданный приоритет, остальные поля - как обычно
+        """
+        response = client.post('/api/tasks', json={'title': 'Задача', 'queue': 'work', 'priority': 'critical'})
+        assert response.status_code == 200
+        body = response.json()
+        assert body['priority'] == 'critical'
+
+        assert task_row_as_dict(db_connection, body['id']) == {
+            'number': body['number'],
+            'title': 'Задача',
+            'queue_key': 'work',
+            'status_key': body['status'],
+            'description': '',
+            'position': 0,
+            'priority': 'critical',
+        }
+
+    def test_patch_changes_priority(self, client, db_connection):
+        """
+        Тест проверяет изменение приоритета через PATCH /api/tasks/{id}.
+
+        Ожидание: приоритет меняется на переданный, остальные поля не затронуты
+        """
+        task = client.post('/api/tasks', json={'title': 'Задача', 'queue': 'work'}).json()
+
+        response = client.patch(f'/api/tasks/{task["id"]}', json={'priority': 'high'})
+        assert response.status_code == 200
+        assert response.json()['priority'] == 'high'
+
+        assert task_row_as_dict(db_connection, task['id']) == {
+            'number': task['number'],
+            'title': 'Задача',
+            'queue_key': 'work',
+            'status_key': task['status'],
+            'description': '',
+            'position': 0,
+            'priority': 'high',
+        }
+
+    def test_patch_without_priority_keeps_previous_value(self, client, db_connection):
+        """
+        Тест проверяет PATCH без поля priority в теле запроса.
+
+        Ожидание: приоритет задачи не меняется, если поле не передано вовсе
+        """
+        task = client.post('/api/tasks', json={'title': 'Задача', 'queue': 'work', 'priority': 'high'}).json()
+
+        response = client.patch(f'/api/tasks/{task["id"]}', json={'title': 'Другое название'})
+        assert response.status_code == 200
+        assert response.json()['priority'] == 'high'
+
+        assert task_row_as_dict(db_connection, task['id'])['priority'] == 'high'
+
+    def test_invalid_priority_returns_422(self, client):
+        """
+        Тест проверяет создание задачи с приоритетом вне закрытого списка значений.
+
+        Ожидание: 422 - Pydantic отклоняет значение, не входящее в Literal
+        """
+        response = client.post('/api/tasks', json={'title': 'Задача', 'queue': 'work', 'priority': 'urgent'})
+        assert response.status_code == 422

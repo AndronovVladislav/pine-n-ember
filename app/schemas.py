@@ -30,6 +30,9 @@ class QueueOut(BaseModel):
     text: str
 
 
+TaskPriority = Literal['critical', 'high', 'medium', 'low', 'lowest']
+
+
 class TaskOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -39,12 +42,14 @@ class TaskOut(BaseModel):
     queue: str | None
     status: str
     description: str
+    priority: TaskPriority
 
 
 class TaskCreate(BaseModel):
     title: str
     queue: str | None = None
     status: str | None = None
+    priority: TaskPriority | None = None
 
 
 class TaskUpdate(BaseModel):
@@ -52,6 +57,7 @@ class TaskUpdate(BaseModel):
     queue: str | None = None
     status: str | None = None
     description: str | None = None
+    priority: TaskPriority | None = None
 
 
 class TaskMove(BaseModel):

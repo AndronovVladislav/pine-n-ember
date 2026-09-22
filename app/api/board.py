@@ -32,7 +32,7 @@ def create_task(payload: TaskCreate) -> TaskOut:
     if not queue:
         raise HTTPException(400, 'queue is required')
     with _board_repo() as repo:
-        return repo.create_task(title, queue, payload.status)
+        return repo.create_task(title, queue, payload.status, payload.priority)
 
 
 @router.patch('/tasks/{task_id}')
@@ -48,6 +48,7 @@ def update_task(task_id: str, payload: TaskUpdate) -> TaskOut:
             queue_label=payload.queue,
             status_label=payload.status,
             description=payload.description,
+            priority=payload.priority,
         )
 
 

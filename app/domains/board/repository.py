@@ -15,6 +15,7 @@ def _task_from_row(row) -> Task:
         queue=row.queue_key,
         status=row.status_key,
         description=row.description or '',
+        priority=row.priority,
     )
 
 
@@ -78,7 +79,9 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         task_list = [_task_from_row(row) for row in conn.execute(select(models.Task).order_by(models.Task.position))]
         return status_list, queue_list, task_list
 
-    def create_task(self, title: str, queue_label: str | None, status_label: str | None) -> Task:
+    def create_task(
+        self, title: str, queue_label: str | None, status_label: str | None, priority: str | None = None
+    ) -> Task:
         conn = self._conn
         queue_key = self._resolve_queue(queue_label)
         status_key = self._resolve_status(status_label)
@@ -94,6 +97,7 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
                 status_key=status_key,
                 description='',
                 position=max_pos + 1,
+                priority=priority or 'low',
             )
         )
         conn.commit()
@@ -108,6 +112,7 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         queue_label: str | None = None,
         status_label: str | None = None,
         description: str | None = None,
+        priority: str | None = None,
     ) -> Task:
         conn = self._conn
         row = conn.execute(select(models.Task).where(models.Task.id == task_id)).first()
@@ -130,10 +135,20 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         if description is not None:
             new_description = description
 
+        new_priority = row.priority
+        if priority is not None:
+            new_priority = priority
+
         conn.execute(
             update(models.Task)
             .where(models.Task.id == task_id)
-            .values(title=new_title, queue_key=queue_key, status_key=status_key, description=new_description)
+            .values(
+                title=new_title,
+                queue_key=queue_key,
+                status_key=status_key,
+                description=new_description,
+                priority=new_priority,
+            )
         )
         conn.commit()
         row = conn.execute(select(models.Task).where(models.Task.id == task_id)).one()

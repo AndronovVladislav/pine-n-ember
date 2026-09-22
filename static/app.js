@@ -214,6 +214,7 @@ function render() {
             card.className = 'card' + (st.key === 'done' ? ' done' : '');
             card.draggable = true;
             card.dataset.id = task.id;
+            card.style.borderLeftColor = cardBorderColor(task);
             card.innerHTML = `
         <p class="card-title">${escapeHtml(task.title)}</p>
         <div class="card-meta">
@@ -389,11 +390,40 @@ function openModal() {
     document.getElementById('input-title').focus();
 }
 
+const PRIORITY_LABELS = {
+    critical: 'Критичный',
+    high: 'Высокий',
+    medium: 'Средний',
+    low: 'Низкий',
+    lowest: 'Самый низкий',
+};
+
+const PRIORITY_COLORS = {
+    critical: '#D9534F',
+    high: '#E8A87C',
+    medium: '#FFB454',
+    low: '#7FA37B',
+    lowest: '#4F6E58',
+};
+
+const FINAL_STATUS_COLOR = '#4F6E58';
+
+function finalStatusKey() {
+    if (STATUSES.length === 0) return null;
+    return STATUSES[STATUSES.length - 1].key;
+}
+
+function cardBorderColor(task) {
+    if (task.status === finalStatusKey()) return FINAL_STATUS_COLOR;
+    return PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.low;
+}
+
 function closeModal() {
     document.getElementById('overlay').classList.remove('open');
     document.getElementById('input-title').value = '';
     document.getElementById('input-queue').value = '';
     document.getElementById('input-status').value = '';
+    document.getElementById('input-priority').value = 'low';
 }
 
 async function addTask() {
@@ -401,9 +431,10 @@ async function addTask() {
     const queue = document.getElementById('input-queue').value.trim();
     if (!title || !queue) return;
     const status = document.getElementById('input-status').value.trim() || null;
+    const priority = document.getElementById('input-priority').value;
 
     try {
-        await api('/tasks', {method: 'POST', body: JSON.stringify({title, queue, status})});
+        await api('/tasks', {method: 'POST', body: JSON.stringify({title, queue, status, priority})});
         await refresh();
         closeModal();
     } catch (err) {
@@ -466,6 +497,12 @@ function renderDetail(taskId) {
         <label for="detail-status">Статус</label>
         <input type="text" id="detail-status" list="status-options" value="${escapeAttr(status.label)}">
       </div>
+      <div class="detail-field">
+        <label for="detail-priority">Приоритет</label>
+        <select id="detail-priority">
+          ${Object.entries(PRIORITY_LABELS).map(([key, label]) => `<option value="${key}"${key === task.priority ? ' selected' : ''}>${label}</option>`).join('')}
+        </select>
+      </div>
     </div>
     <label for="detail-description" class="detail-desc-label">Описание</label>
     <textarea class="detail-desc" id="detail-description" placeholder="Коротко опиши, что нужно сделать...">${escapeHtml(task.description || '')}</textarea>
@@ -478,11 +515,13 @@ function renderDetail(taskId) {
     const titleEl = document.getElementById('detail-title');
     const queueEl = document.getElementById('detail-queue');
     const statusEl = document.getElementById('detail-status');
+    const priorityEl = document.getElementById('detail-priority');
     const descEl = document.getElementById('detail-description');
 
     titleEl.addEventListener('change', () => saveDetail(task.id, {title: titleEl.value.trim() || task.title}));
     queueEl.addEventListener('change', () => saveDetail(task.id, {queue: queueEl.value.trim() || null}));
     statusEl.addEventListener('change', () => saveDetail(task.id, {status: statusEl.value || null}));
+    priorityEl.addEventListener('change', () => saveDetail(task.id, {priority: priorityEl.value}));
     descEl.addEventListener('change', () => saveDetail(task.id, {description: descEl.value}));
 }
 

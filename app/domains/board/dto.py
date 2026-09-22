@@ -24,3 +24,4 @@ class Task:
     queue: str | None
     status: str
     description: str
+    priority: str

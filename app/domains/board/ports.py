@@ -7,7 +7,9 @@ from app.domains.board.dto import Queue, Status, Task
 class BoardRepository(Repository, Protocol):
     def list_board(self) -> tuple[list[Status], list[Queue], list[Task]]: ...
 
-    def create_task(self, title: str, queue_label: str | None, status_label: str | None) -> Task: ...
+    def create_task(
+        self, title: str, queue_label: str | None, status_label: str | None, priority: str | None = None
+    ) -> Task: ...
 
     def update_task(
         self,
@@ -17,6 +19,7 @@ class BoardRepository(Repository, Protocol):
         queue_label: str | None = None,
         status_label: str | None = None,
         description: str | None = None,
+        priority: str | None = None,
     ) -> Task:
         """Бросает NotFound, если задачи нет."""
         ...

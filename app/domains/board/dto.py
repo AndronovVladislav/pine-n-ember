@@ -14,6 +14,7 @@ class Queue:
     label: str
     bg: str
     text: str
+    position: int
 
 
 @dataclass(frozen=True)

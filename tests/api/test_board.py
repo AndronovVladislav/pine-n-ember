@@ -20,6 +20,17 @@ def seed_status(client, label='Черновик'):
     return task['status']
 
 
+def queue_row_as_dict(conn, queue_key):
+    row = conn.execute(select(board_models.Queue).where(board_models.Queue.key == queue_key)).one()
+    return {k: v for k, v in row._mapping.items() if k != 'key'}
+
+
+def seed_queue(client, label):
+    """Очереди создаются только неявно - через задачу с этой очередью (отдельного POST /api/queues нет)."""
+    task = client.post('/api/tasks', json={'title': 'seed', 'queue': label}).json()
+    return task['queue']
+
+
 @pytest.mark.spec('0013')
 class TestRenameStatus:
     def test_row_is_updated_fully(self, client, db_connection):
@@ -312,3 +323,127 @@ class TestTaskPriority:
         """
         response = client.post('/api/tasks', json={'title': 'Задача', 'queue': 'work', 'priority': 'urgent'})
         assert response.status_code == 422
+
+
+@pytest.mark.spec('0018')
+class TestQueueReorder:
+    def test_board_returns_queues_ordered_by_position(self, client):
+        """
+        Тест проверяет порядок очередей в GET /api/board.
+
+        Ожидание: очереди идут в порядке возрастания position, а не в порядке создания в БД
+        """
+        first_key = seed_queue(client, 'Alpha')
+        second_key = seed_queue(client, 'Beta')
+
+        response = client.put('/api/queues/reorder', json={'keys': [second_key, first_key]})
+        assert response.status_code == 200
+
+        queues = client.get('/api/board').json()['queues']
+        keys_in_order = [q['key'] for q in queues if q['key'] in (first_key, second_key)]
+        assert keys_in_order == [second_key, first_key]
+
+    def test_new_queue_gets_next_position(self, client, db_connection):
+        """
+        Тест проверяет, что новая очередь, созданная "на лету", получает следующую по очереди позицию.
+
+        Ожидание: position новой очереди на 1 больше максимального существующего
+        """
+        first_key = seed_queue(client, 'Gamma')
+        max_position = queue_row_as_dict(db_connection, first_key)['position']
+
+        second_key = seed_queue(client, 'Delta')
+
+        assert queue_row_as_dict(db_connection, second_key)['position'] == max_position + 1
+
+    def test_mismatched_keys_return_400(self, client):
+        """
+        Тест проверяет переупорядочивание с набором ключей, не совпадающим с текущими очередями.
+
+        Ожидание: 400, домен бросает InvalidOperation
+        """
+        seed_queue(client, 'Epsilon')
+
+        response = client.put('/api/queues/reorder', json={'keys': ['no-such-queue']})
+        assert response.status_code == 400
+
+    def test_duplicate_key_in_list_returns_400(self, client):
+        """
+        Тест проверяет переупорядочивание, где один ключ задвоен вместо другого пропущенного.
+
+        Ожидание: 400 - совпадение множеств ключей недостаточно, длина списка тоже должна совпадать,
+        иначе задвоенный ключ молча проходит проверку set(keys) == existing
+        """
+        first_key = seed_queue(client, 'Zeta2')
+        second_key = seed_queue(client, 'Eta2')
+
+        response = client.put('/api/queues/reorder', json={'keys': [first_key, first_key]})
+        assert response.status_code == 400
+        assert first_key != second_key
+
+
+@pytest.mark.spec('0018')
+class TestRenameQueue:
+    def test_row_is_updated_fully(self, client, db_connection):
+        """
+        Тест проверяет переименование очереди через PATCH /api/queues/{key}.
+
+        Ожидание: label очереди меняется, key/bg/text_color/position не затрагиваются
+        """
+        queue_key = seed_queue(client, 'Zeta')
+        before = queue_row_as_dict(db_connection, queue_key)
+
+        response = client.patch(f'/api/queues/{queue_key}', json={'label': 'ZETA-2'})
+        assert response.status_code == 200
+
+        assert queue_row_as_dict(db_connection, queue_key) == {**before, 'label': 'ZETA-2'}
+
+    def test_tasks_keep_their_queue_key(self, client):
+        """
+        Тест проверяет, что переименование очереди не рвёт связь с задачами внутри неё - они
+        ссылаются на queue_key, а не на label.
+
+        Ожидание: у задачи после переименования её очереди queue в ответе API не меняется
+        """
+        queue_key = seed_queue(client, 'Eta')
+        task = client.post('/api/tasks', json={'title': 'Разобрать WAL', 'queue': queue_key}).json()
+
+        client.patch(f'/api/queues/{queue_key}', json={'label': 'ETA-2'})
+
+        response = client.get('/api/board').json()
+        updated_task = next(t for t in response['tasks'] if t['id'] == task['id'])
+        assert updated_task == {**task, 'queue': queue_key}
+
+    def test_missing_queue_returns_404(self, client):
+        """
+        Тест проверяет переименование несуществующей очереди.
+
+        Ожидание: 404, домен бросает NotFound
+        """
+        response = client.patch('/api/queues/no-such-queue', json={'label': 'Новое имя'})
+        assert response.status_code == 404
+
+    def test_blank_label_returns_400(self, client):
+        """
+        Тест проверяет переименование очереди в пустую/пробельную строку.
+
+        Ожидание: 400, домен бросает InvalidOperation - очередь не может остаться без имени
+        """
+        queue_key = seed_queue(client, 'Theta')
+
+        response = client.patch(f'/api/queues/{queue_key}', json={'label': '   '})
+        assert response.status_code == 400
+
+    def test_duplicate_label_returns_400(self, client):
+        """
+        Тест проверяет переименование очереди в label другой уже существующей очереди.
+
+        Ожидание: 400, домен бросает InvalidOperation - _resolve_queue ищет очередь по label без
+        учёта регистра, дубликат сделал бы выбор очереди при создании/правке задачи недетерминированным
+        """
+        first_key = seed_queue(client, 'Iota')
+        second_key = seed_queue(client, 'Kappa')
+
+        response = client.patch(f'/api/queues/{second_key}', json={'label': 'IOTA'})
+        assert response.status_code == 400
+        assert first_key != second_key

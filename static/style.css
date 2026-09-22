@@ -204,6 +204,7 @@ body::before {
 .topic-add-concept:focus-visible,
 .align-btn:focus-visible,
 .range-btn:focus-visible,
+.queue-crumb:focus-visible,
 .detail-close:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
@@ -334,6 +335,11 @@ body::before {
 }
 
 .card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 44px;
     background: var(--card);
     border: 1px solid var(--border);
     border-left: 3px solid var(--border);
@@ -375,25 +381,18 @@ body::before {
 }
 
 .card-title {
+    width: 100%;
+    min-width: 0;
     font-size: 13.5px;
     font-weight: 500;
-    margin: 0 0 8px;
+    margin: 0;
     line-height: 1.4;
 }
 
 .card-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.task-key {
-    font-size: 11px;
-    font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
 }
 
 .card-delete {
@@ -860,9 +859,16 @@ body::before {
     margin-bottom: 6px;
 }
 
+.detail-field {
+    min-width: 0;
+}
+
 .detail-field input,
 .detail-field select {
     width: 100%;
+    min-width: 0;
+    height: 36px;
+    box-sizing: border-box;
     background: var(--card);
     border: 1px solid var(--border-strong);
     color: var(--text);
@@ -870,6 +876,15 @@ body::before {
     border-radius: 8px;
     font-size: 13px;
     font-family: inherit;
+}
+
+.detail-field select {
+    appearance: none;
+    padding-right: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B8F74' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 14px;
 }
 
 .detail-field input:focus,
@@ -1005,7 +1020,7 @@ body::before {
     font-weight: 500;
     padding: 6px 12px;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, opacity 0.15s;
 }
 
 .range-btn:hover {
@@ -1016,6 +1031,67 @@ body::before {
 .range-btn.active {
     color: var(--bg);
     background: var(--accent);
+}
+
+.queue-crumbs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.queue-crumb {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 2px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, opacity 0.15s;
+}
+
+.queue-crumb:hover {
+    color: var(--text);
+}
+
+.queue-crumb.active {
+    color: var(--text);
+    font-weight: 600;
+    border-bottom-color: var(--accent);
+}
+
+.queue-crumb[draggable="true"] {
+    cursor: grab;
+}
+
+.queue-crumb.dragging {
+    opacity: 0.4;
+}
+
+.queue-crumb.drag-over {
+    color: var(--text);
+    border-bottom-color: var(--border-strong);
+}
+
+.queue-crumb-sep {
+    color: var(--border-strong);
+    font-size: 13px;
+}
+
+.queue-crumb-input {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 3px 8px;
+    min-width: 0;
+    width: 90px;
 }
 
 .finance-totals {

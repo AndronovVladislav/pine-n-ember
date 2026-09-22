@@ -41,3 +41,11 @@ class BoardRepository(Repository, Protocol):
     def rename_status(self, status_key: str, label: str) -> Status:
         """Бросает NotFound, если статуса нет; InvalidOperation, если label пустой."""
         ...
+
+    def reorder_queues(self, keys: list[str]) -> None:
+        """Бросает InvalidOperation, если набор ключей не совпадает с текущими очередями."""
+        ...
+
+    def rename_queue(self, queue_key: str, label: str) -> Queue:
+        """Бросает NotFound, если очереди нет; InvalidOperation, если label пустой или дублирует."""
+        ...

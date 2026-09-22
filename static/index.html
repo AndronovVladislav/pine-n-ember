@@ -180,15 +180,9 @@
     </div>
 </section>
 
-<section id="detail-view" class="hidden">
-    <button class="back-link" onclick="goToBoard()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 18l-6-6 6-6"/>
-        </svg>
-        Назад к доске
-    </button>
-    <div class="detail-card" id="detail-card"></div>
-</section>
+<div class="overlay" id="detail-overlay">
+    <div class="modal detail-modal" id="detail-card"></div>
+</div>
 
 <div class="overlay" id="overlay">
     <div class="modal">

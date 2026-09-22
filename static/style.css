@@ -41,7 +41,7 @@ body {
     position: relative;
 }
 
-#app-header, #board-view, #knowledge-view, #finance-view, #detail-view {
+#app-header, #board-view, #knowledge-view, #finance-view {
     max-width: var(--content-width);
     margin: 0 auto;
 }
@@ -74,7 +74,7 @@ body::before {
     z-index: 0;
 }
 
-.header, .board, #detail-view, #knowledge-view, #finance-view, .topics-grid {
+.header, .board, #knowledge-view, #finance-view, .topics-grid {
     position: relative;
     z-index: 1;
 }
@@ -204,7 +204,7 @@ body::before {
 .topic-add-concept:focus-visible,
 .align-btn:focus-visible,
 .range-btn:focus-visible,
-.back-link:focus-visible {
+.detail-close:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
     border-radius: var(--radius);
@@ -661,8 +661,47 @@ body::before {
     z-index: 10;
 }
 
-.overlay.open {
+.overlay.open, .overlay.closing {
     display: flex;
+}
+
+#detail-overlay {
+    opacity: 0;
+    transition: opacity 160ms ease;
+}
+
+#detail-overlay.open {
+    opacity: 1;
+}
+
+#detail-overlay .detail-modal {
+    animation: modal-in 160ms ease;
+}
+
+#detail-overlay.closing .detail-modal {
+    animation: modal-out 160ms ease forwards;
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: scale(0.97) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes modal-out {
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.97) translateY(4px);
+    }
 }
 
 .modal {
@@ -750,34 +789,39 @@ body::before {
     transform: scale(0.97);
 }
 
-.back-link {
-    display: inline-flex;
+.detail-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
     background: none;
     border: none;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 20px;
+    line-height: 1;
     cursor: pointer;
-    padding: 0;
-    margin-bottom: 20px;
+    border-radius: 8px;
 }
 
-.back-link:hover {
+.detail-close:hover {
     color: var(--text);
+    background: var(--card);
 }
 
-.back-link svg {
-    width: 14px;
-    height: 14px;
-}
-
-.detail-card {
+.detail-modal {
+    position: relative;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 24px;
-    max-width: 560px;
+    width: 560px;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
 }
 
 .detail-title {

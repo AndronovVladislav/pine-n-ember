@@ -1,22 +1,21 @@
 from typing import Protocol
 
 from app.domains._repository import Repository
-from app.domains.board.dto import Status, Tag, Task
+from app.domains.board.dto import Queue, Status, Task
 
 
 class BoardRepository(Repository, Protocol):
-    def list_board(self) -> tuple[list[Status], list[Tag], list[Task]]: ...
+    def list_board(self) -> tuple[list[Status], list[Queue], list[Task]]: ...
 
-    def create_task(self, title: str, tag_label: str | None, due: str, status_label: str | None) -> Task: ...
+    def create_task(self, title: str, queue_label: str | None, status_label: str | None) -> Task: ...
 
     def update_task(
         self,
         task_id: str,
         *,
         title: str | None = None,
-        tag_label: str | None = None,
+        queue_label: str | None = None,
         status_label: str | None = None,
-        due: str | None = None,
         description: str | None = None,
     ) -> Task:
         """Бросает NotFound, если задачи нет."""

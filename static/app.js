@@ -12,7 +12,7 @@ function showToast(message, type = 'error') {
 }
 
 let STATUSES = [];
-let TAGS = [];
+let QUEUES = [];
 let tasks = [];
 
 function currentAlignTarget() {
@@ -61,10 +61,14 @@ const COLUMN_GAP = 16;
 function fitBoardWidth() {
     const boardView = document.getElementById('board-view');
     const board = document.getElementById('board');
+    const switcher = document.getElementById('queue-switcher');
     const available = boardView.clientWidth;
     const maxCols = Math.max(1, Math.floor((available + COLUMN_GAP) / (COLUMN_WIDTH + COLUMN_GAP)));
-    board.style.maxWidth = (maxCols * COLUMN_WIDTH + (maxCols - 1) * COLUMN_GAP) + 'px';
+    const width = (maxCols * COLUMN_WIDTH + (maxCols - 1) * COLUMN_GAP) + 'px';
+    board.style.maxWidth = width;
     board.style.margin = '0 auto';
+    switcher.style.maxWidth = width;
+    switcher.style.margin = '0 auto 16px';
 }
 
 let fitBoardWidthTimer = null;
@@ -89,7 +93,7 @@ async function api(path, options) {
 async function loadBoard() {
     const data = await api('/board');
     STATUSES = data.statuses;
-    TAGS = data.tags;
+    QUEUES = data.queues;
     tasks = data.tasks;
 }
 
@@ -97,13 +101,47 @@ function getStatus(key) {
     return STATUSES.find(s => s.key === key) || STATUSES[0];
 }
 
-function getTag(key) {
-    return TAGS.find(t => t.key === key);
+function getQueue(key) {
+    return QUEUES.find(q => q.key === key);
+}
+
+function getBoardActiveQueue() {
+    let saved = null;
+    try {
+        saved = localStorage.getItem('boardActiveQueue');
+    } catch {
+        /* localStorage недоступен */
+    }
+    if (saved && QUEUES.some(q => q.key === saved)) return saved;
+    return QUEUES[0] ? QUEUES[0].key : null;
+}
+
+function setBoardActiveQueue(key) {
+    try {
+        localStorage.setItem('boardActiveQueue', key);
+    } catch {
+        /* localStorage недоступен, выбор просто не сохранится */
+    }
+    render();
+}
+
+function renderQueueSwitcher() {
+    const switcher = document.getElementById('queue-switcher');
+    if (QUEUES.length === 0) {
+        switcher.classList.add('hidden');
+        switcher.innerHTML = '';
+        return;
+    }
+    switcher.classList.remove('hidden');
+    const active = getBoardActiveQueue();
+    switcher.innerHTML = QUEUES.map(q => `
+    <button type="button" class="range-btn${q.key === active ? ' active' : ''}" onclick="setBoardActiveQueue('${q.key}')">${escapeHtml(q.label)}</button>
+  `).join('');
 }
 
 function populateDatalists() {
-    const tagList = document.getElementById('tag-options');
-    tagList.innerHTML = TAGS.map(t => `<option value="${escapeHtml(t.label)}">`).join('');
+    const queueList = document.getElementById('queue-options');
+    queueList.innerHTML = QUEUES.map(q => `<option value="${escapeHtml(q.label)}">`).join('');
     const statusList = document.getElementById('status-options');
     statusList.innerHTML = STATUSES.map(s => `<option value="${escapeHtml(s.label)}">`).join('');
 }
@@ -135,7 +173,10 @@ function render() {
     board.innerHTML = '';
     fitBoardWidth();
     applyAlign();
-    document.getElementById('subtitle').textContent = tasks.length + ' задач';
+    renderQueueSwitcher();
+    const activeQueue = getBoardActiveQueue();
+    const visibleTasks = activeQueue ? tasks.filter(t => t.queue === activeQueue) : [];
+    document.getElementById('subtitle').textContent = visibleTasks.length + ' задач';
     populateDatalists();
 
     STATUSES.forEach(st => {
@@ -146,7 +187,7 @@ function render() {
         const head = document.createElement('div');
         head.className = 'column-head';
         head.draggable = true;
-        const items = tasks.filter(t => t.status === st.key);
+        const items = visibleTasks.filter(t => t.status === st.key);
         head.innerHTML = `
       <span class="column-drag-handle">${dragHandleIcon()}</span>
       <span class="dot" style="background:${st.color}"></span>
@@ -173,21 +214,11 @@ function render() {
             card.className = 'card' + (st.key === 'done' ? ' done' : '');
             card.draggable = true;
             card.dataset.id = task.id;
-            const tag = getTag(task.tag);
-            if (tag) {
-                card.style.setProperty('--card-accent', tag.text);
-            }
-            const tagHtml = tag
-                ? `<span class="tag" style="background:${tag.bg};color:${tag.text}">${escapeHtml(tag.label)}</span>`
-                : '<span></span>';
             card.innerHTML = `
         <p class="card-title">${escapeHtml(task.title)}</p>
         <div class="card-meta">
-          ${tagHtml}
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="due">${escapeHtml(task.due || '')}</span>
-            <button class="card-delete" title="Удалить задачу" onclick="event.stopPropagation(); deleteTask('${task.id}')">${trashIcon(13)}</button>
-          </div>
+          <span class="task-key">TASK-${task.number}</span>
+          <button class="card-delete" title="Удалить задачу" onclick="event.stopPropagation(); deleteTask('${task.id}')">${trashIcon(13)}</button>
         </div>
       `;
             card.addEventListener('click', () => openDetail(task.id));
@@ -352,6 +383,8 @@ function startRenameStatus(titleEl, statusKey) {
 
 function openModal() {
     populateDatalists();
+    const activeQueue = getQueue(getBoardActiveQueue());
+    document.getElementById('input-queue').value = activeQueue ? activeQueue.label : '';
     document.getElementById('overlay').classList.add('open');
     document.getElementById('input-title').focus();
 }
@@ -359,20 +392,18 @@ function openModal() {
 function closeModal() {
     document.getElementById('overlay').classList.remove('open');
     document.getElementById('input-title').value = '';
-    document.getElementById('input-due').value = '';
-    document.getElementById('input-tag').value = '';
+    document.getElementById('input-queue').value = '';
     document.getElementById('input-status').value = '';
 }
 
 async function addTask() {
     const title = document.getElementById('input-title').value.trim();
-    if (!title) return;
-    const tag = document.getElementById('input-tag').value.trim() || null;
-    const due = document.getElementById('input-due').value.trim();
+    const queue = document.getElementById('input-queue').value.trim();
+    if (!title || !queue) return;
     const status = document.getElementById('input-status').value.trim() || null;
 
     try {
-        await api('/tasks', {method: 'POST', body: JSON.stringify({title, tag, due, status})});
+        await api('/tasks', {method: 'POST', body: JSON.stringify({title, queue, status})});
         await refresh();
         closeModal();
     } catch (err) {
@@ -417,21 +448,18 @@ function renderDetail(taskId) {
         return;
     }
     const status = getStatus(task.status);
-    const tag = getTag(task.tag);
+    const queue = getQueue(task.queue);
     card.innerHTML = `
     <input class="detail-title" id="detail-title" value="${escapeAttr(task.title)}" placeholder="Название задачи">
+    <p class="detail-key mono">TASK-${task.number}</p>
     <div class="detail-row">
       <div class="detail-field">
-        <label for="detail-tag">Тег</label>
-        <input type="text" id="detail-tag" list="tag-options" value="${escapeAttr(tag ? tag.label : '')}">
+        <label for="detail-queue">Очередь</label>
+        <input type="text" id="detail-queue" list="queue-options" value="${escapeAttr(queue ? queue.label : '')}">
       </div>
       <div class="detail-field">
         <label for="detail-status">Статус</label>
         <input type="text" id="detail-status" list="status-options" value="${escapeAttr(status.label)}">
-      </div>
-      <div class="detail-field">
-        <label for="detail-due">Дата</label>
-        <input type="text" id="detail-due" value="${escapeAttr(task.due || '')}">
       </div>
     </div>
     <label for="detail-description" class="detail-desc-label">Описание</label>
@@ -443,15 +471,13 @@ function renderDetail(taskId) {
   `;
 
     const titleEl = document.getElementById('detail-title');
-    const tagEl = document.getElementById('detail-tag');
+    const queueEl = document.getElementById('detail-queue');
     const statusEl = document.getElementById('detail-status');
-    const dueEl = document.getElementById('detail-due');
     const descEl = document.getElementById('detail-description');
 
     titleEl.addEventListener('change', () => saveDetail(task.id, {title: titleEl.value.trim() || task.title}));
-    tagEl.addEventListener('change', () => saveDetail(task.id, {tag: tagEl.value.trim() || null}));
+    queueEl.addEventListener('change', () => saveDetail(task.id, {queue: queueEl.value.trim() || null}));
     statusEl.addEventListener('change', () => saveDetail(task.id, {status: statusEl.value || null}));
-    dueEl.addEventListener('change', () => saveDetail(task.id, {due: dueEl.value.trim()}));
     descEl.addEventListener('change', () => saveDetail(task.id, {description: descEl.value}));
 }
 
@@ -460,7 +486,7 @@ async function saveDetail(taskId, patch) {
         const updated = await api(`/tasks/${taskId}`, {method: 'PATCH', body: JSON.stringify(patch)});
         const idx = tasks.findIndex(t => t.id === taskId);
         if (idx !== -1) tasks[idx] = updated;
-        if (patch.tag !== undefined || patch.status !== undefined) {
+        if (patch.queue !== undefined || patch.status !== undefined) {
             await loadBoard();
         }
         populateDatalists();

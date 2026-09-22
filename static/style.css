@@ -336,7 +336,7 @@ body::before {
 .card {
     background: var(--card);
     border: 1px solid var(--border);
-    border-left: 3px solid var(--card-accent, var(--border));
+    border-left: 3px solid var(--border);
     border-radius: var(--radius);
     padding: 12px;
     cursor: grab;
@@ -347,7 +347,6 @@ body::before {
 .card:hover {
     background: var(--card-hover);
     border-color: var(--border-strong);
-    border-left-color: var(--card-accent, var(--border-strong));
     transform: translateY(-2px);
 }
 
@@ -388,14 +387,7 @@ body::before {
     align-items: center;
 }
 
-.tag {
-    font-size: 11px;
-    font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
-    padding: 2px 8px;
-    border-radius: 6px;
-}
-
-.due {
+.task-key {
     font-size: 11px;
     font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
     color: var(--text-muted);
@@ -802,6 +794,12 @@ body::before {
 
 .detail-title:focus {
     outline: none;
+}
+
+.detail-key {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0;
 }
 
 .detail-row {

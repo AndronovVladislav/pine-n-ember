@@ -54,6 +54,8 @@
         </div>
     </div>
 
+    <div class="range-control hidden" role="group" aria-label="Очередь" id="queue-switcher"></div>
+
     <div class="board" id="board"></div>
 </section>
 
@@ -196,13 +198,9 @@
             <input type="text" id="input-title" placeholder="Например: разобрать WAL">
         </div>
         <div class="field">
-            <label for="input-tag">Тег</label>
-            <input type="text" id="input-tag" list="tag-options" placeholder="work, личное, или свой">
-            <datalist id="tag-options"></datalist>
-        </div>
-        <div class="field">
-            <label for="input-due">Дата</label>
-            <input type="text" id="input-due" placeholder="например: пт, сегодня, ср">
+            <label for="input-queue">Очередь</label>
+            <input type="text" id="input-queue" list="queue-options" placeholder="work, личное, или своя">
+            <datalist id="queue-options"></datalist>
         </div>
         <div class="field">
             <label for="input-status">Статус</label>

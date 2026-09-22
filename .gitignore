@@ -5,3 +5,4 @@ tracker.db
 /.idea
 backups/
 /.DS_Store
+/.playwright-mcp/

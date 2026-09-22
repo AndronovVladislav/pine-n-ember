@@ -9,7 +9,7 @@ class Status:
 
 
 @dataclass(frozen=True)
-class Tag:
+class Queue:
     key: str
     label: str
     bg: str
@@ -19,8 +19,8 @@ class Tag:
 @dataclass(frozen=True)
 class Task:
     id: str
+    number: int
     title: str
-    tag: str | None
-    due: str
+    queue: str | None
     status: str
     description: str

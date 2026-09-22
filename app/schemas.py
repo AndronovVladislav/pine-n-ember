@@ -21,7 +21,7 @@ class StatusRename(BaseModel):
     label: str
 
 
-class TagOut(BaseModel):
+class QueueOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     key: str
@@ -34,24 +34,22 @@ class TaskOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    number: int
     title: str
-    tag: str | None
-    due: str
+    queue: str | None
     status: str
     description: str
 
 
 class TaskCreate(BaseModel):
     title: str
-    tag: str | None = None
-    due: str = ''
+    queue: str | None = None
     status: str | None = None
 
 
 class TaskUpdate(BaseModel):
     title: str | None = None
-    tag: str | None = None
-    due: str | None = None
+    queue: str | None = None
     status: str | None = None
     description: str | None = None
 

@@ -13,8 +13,11 @@ from main import app
 
 @pytest.fixture(scope='session', autouse=True)
 def _test_schema():
-    """Создаёт схему в общей тестовой БД tracker_test один раз за сессию тестов."""
+    """Пересоздаёт схему в общей тестовой БД tracker_test один раз за сессию тестов - drop_all
+    перед create_all, чтобы старая схема с прошлого запуска (до переименования/удаления колонок
+    в моделях) не расходилась с текущим Base.metadata."""
     engine = db_module.get_engine()
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     command.stamp(Config(str(ALEMBIC_INI)), 'head')
 

@@ -182,7 +182,7 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
     def reorder_statuses(self, keys: list[str]) -> None:
         conn = self._conn
         existing = {row.key for row in conn.execute(select(models.Status.key))}
-        if set(keys) != existing:
+        if len(keys) != len(existing) or set(keys) != existing:
             raise InvalidOperation('keys must match existing statuses exactly')
         for position, key in enumerate(keys):
             conn.execute(update(models.Status).where(models.Status.key == key).values(position=position))
@@ -219,7 +219,7 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
     def reorder_queues(self, keys: list[str]) -> None:
         conn = self._conn
         existing = {row.key for row in conn.execute(select(models.Queue.key))}
-        if set(keys) != existing:
+        if len(keys) != len(existing) or set(keys) != existing:
             raise InvalidOperation('keys must match existing queues exactly')
         for position, key in enumerate(keys):
             conn.execute(update(models.Queue).where(models.Queue.key == key).values(position=position))

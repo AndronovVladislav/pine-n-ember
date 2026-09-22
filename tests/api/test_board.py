@@ -367,6 +367,20 @@ class TestQueueReorder:
         response = client.put('/api/queues/reorder', json={'keys': ['no-such-queue']})
         assert response.status_code == 400
 
+    def test_duplicate_key_in_list_returns_400(self, client):
+        """
+        Тест проверяет переупорядочивание, где один ключ задвоен вместо другого пропущенного.
+
+        Ожидание: 400 - совпадение множеств ключей недостаточно, длина списка тоже должна совпадать,
+        иначе задвоенный ключ молча проходит проверку set(keys) == existing
+        """
+        first_key = seed_queue(client, 'Zeta2')
+        second_key = seed_queue(client, 'Eta2')
+
+        response = client.put('/api/queues/reorder', json={'keys': [first_key, first_key]})
+        assert response.status_code == 400
+        assert first_key != second_key
+
 
 @pytest.mark.spec('0018')
 class TestRenameQueue:

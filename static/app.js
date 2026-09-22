@@ -135,8 +135,8 @@ function renderQueueSwitcher() {
     }
     switcher.classList.remove('hidden');
     const active = getBoardActiveQueue();
-    switcher.innerHTML = QUEUES.map(q => `
-    <button type="button" class="range-btn${q.key === active ? ' active' : ''}" draggable="true" data-queue="${q.key}"
+    switcher.innerHTML = QUEUES.map((q, i) => `
+    ${i > 0 ? '<span class="queue-crumb-sep">/</span>' : ''}<button type="button" class="queue-crumb${q.key === active ? ' active' : ''}" draggable="true" data-queue="${q.key}"
       onclick="setBoardActiveQueue('${q.key}')" ondblclick="event.stopPropagation(); startRenameQueue(this, '${q.key}')">${escapeHtml(q.label)}</button>
   `).join('');
 }
@@ -144,7 +144,7 @@ function renderQueueSwitcher() {
 let draggedQueueKey = null;
 
 function onQueueDragStart(e) {
-    const btn = e.target.closest('.range-btn');
+    const btn = e.target.closest('.queue-crumb');
     if (!btn) return;
     draggedQueueKey = btn.dataset.queue;
     btn.classList.add('dragging');
@@ -152,25 +152,25 @@ function onQueueDragStart(e) {
 }
 
 function onQueueDragEnd(e) {
-    const btn = e.target.closest('.range-btn');
+    const btn = e.target.closest('.queue-crumb');
     if (btn) btn.classList.remove('dragging');
     draggedQueueKey = null;
 }
 
 function onQueueDragOver(e) {
-    const btn = e.target.closest('.range-btn');
+    const btn = e.target.closest('.queue-crumb');
     if (!btn) return;
     e.preventDefault();
     btn.classList.add('drag-over');
 }
 
 function onQueueDragLeave(e) {
-    const btn = e.target.closest('.range-btn');
+    const btn = e.target.closest('.queue-crumb');
     if (btn) btn.classList.remove('drag-over');
 }
 
 async function onQueueDrop(e) {
-    const btn = e.target.closest('.range-btn');
+    const btn = e.target.closest('.queue-crumb');
     if (!btn || !draggedQueueKey) return;
     e.preventDefault();
     btn.classList.remove('drag-over');
@@ -195,7 +195,7 @@ function startRenameQueue(labelEl, queueKey) {
     const queue = getQueue(queueKey);
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'range-btn-input';
+    input.className = 'queue-crumb-input';
     input.value = queue.label;
     labelEl.replaceWith(input);
     input.focus();
@@ -282,7 +282,10 @@ function render() {
         const head = document.createElement('div');
         head.className = 'column-head';
         head.draggable = true;
-        const items = visibleTasks.filter(t => t.status === st.key);
+        let items = visibleTasks.filter(t => t.status === st.key);
+        if (st.key !== finalStatusKey()) {
+            items = [...items].sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
+        }
         head.innerHTML = `
       <span class="column-drag-handle">${dragHandleIcon()}</span>
       <span class="dot" style="background:${st.color}"></span>
@@ -493,11 +496,19 @@ const PRIORITY_LABELS = {
     lowest: 'Самый низкий',
 };
 
+const PRIORITY_ORDER = {
+    critical: 0,
+    high: 1,
+    medium: 2,
+    low: 3,
+    lowest: 4,
+};
+
 const PRIORITY_COLORS = {
     critical: '#D9534F',
-    high: '#E8A87C',
-    medium: '#FFB454',
-    low: '#7FA37B',
+    high: '#C97D4F',
+    medium: '#D9A441',
+    low: '#8A9A5B',
     lowest: '#4F6E58',
 };
 

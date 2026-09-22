@@ -28,6 +28,15 @@ class QueueOut(BaseModel):
     label: str
     bg: str
     text: str
+    position: int
+
+
+class QueueReorder(BaseModel):
+    keys: list[str]
+
+
+class QueueRename(BaseModel):
+    label: str
 
 
 TaskPriority = Literal['critical', 'high', 'medium', 'low', 'lowest']

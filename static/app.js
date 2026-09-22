@@ -117,6 +117,7 @@ function getBoardActiveQueue() {
 }
 
 function setBoardActiveQueue(key) {
+    if (key === getBoardActiveQueue()) return;
     try {
         localStorage.setItem('boardActiveQueue', key);
     } catch {
@@ -135,9 +136,103 @@ function renderQueueSwitcher() {
     switcher.classList.remove('hidden');
     const active = getBoardActiveQueue();
     switcher.innerHTML = QUEUES.map(q => `
-    <button type="button" class="range-btn${q.key === active ? ' active' : ''}" onclick="setBoardActiveQueue('${q.key}')">${escapeHtml(q.label)}</button>
+    <button type="button" class="range-btn${q.key === active ? ' active' : ''}" draggable="true" data-queue="${q.key}"
+      onclick="setBoardActiveQueue('${q.key}')" ondblclick="event.stopPropagation(); startRenameQueue(this, '${q.key}')">${escapeHtml(q.label)}</button>
   `).join('');
 }
+
+let draggedQueueKey = null;
+
+function onQueueDragStart(e) {
+    const btn = e.target.closest('.range-btn');
+    if (!btn) return;
+    draggedQueueKey = btn.dataset.queue;
+    btn.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function onQueueDragEnd(e) {
+    const btn = e.target.closest('.range-btn');
+    if (btn) btn.classList.remove('dragging');
+    draggedQueueKey = null;
+}
+
+function onQueueDragOver(e) {
+    const btn = e.target.closest('.range-btn');
+    if (!btn) return;
+    e.preventDefault();
+    btn.classList.add('drag-over');
+}
+
+function onQueueDragLeave(e) {
+    const btn = e.target.closest('.range-btn');
+    if (btn) btn.classList.remove('drag-over');
+}
+
+async function onQueueDrop(e) {
+    const btn = e.target.closest('.range-btn');
+    if (!btn || !draggedQueueKey) return;
+    e.preventDefault();
+    btn.classList.remove('drag-over');
+    const targetKey = btn.dataset.queue;
+    if (draggedQueueKey === targetKey) return;
+
+    const fromIdx = QUEUES.findIndex(q => q.key === draggedQueueKey);
+    const toIdx = QUEUES.findIndex(q => q.key === targetKey);
+    const [moved] = QUEUES.splice(fromIdx, 1);
+    QUEUES.splice(toIdx, 0, moved);
+    render();
+    try {
+        await api('/queues/reorder', {method: 'PUT', body: JSON.stringify({keys: QUEUES.map(q => q.key)})});
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось выполнить действие. Попробуйте ещё раз.');
+        await refresh();
+    }
+}
+
+function startRenameQueue(labelEl, queueKey) {
+    const queue = getQueue(queueKey);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'range-btn-input';
+    input.value = queue.label;
+    labelEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const finish = async (commit) => {
+        if (done) return;
+        done = true;
+        const newLabel = input.value.trim();
+        if (commit && newLabel && newLabel !== queue.label) {
+            try {
+                await api(`/queues/${queueKey}`, {method: 'PATCH', body: JSON.stringify({label: newLabel})});
+                await refresh();
+                return;
+            } catch (err) {
+                console.error(err);
+                showToast('Не удалось переименовать очередь. Попробуйте ещё раз.');
+            }
+        }
+        render();
+    };
+    input.addEventListener('blur', () => finish(true));
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') input.blur();
+        if (e.key === 'Escape') {
+            done = true;
+            render();
+        }
+    });
+}
+
+document.getElementById('queue-switcher').addEventListener('dragstart', onQueueDragStart);
+document.getElementById('queue-switcher').addEventListener('dragend', onQueueDragEnd);
+document.getElementById('queue-switcher').addEventListener('dragover', onQueueDragOver);
+document.getElementById('queue-switcher').addEventListener('dragleave', onQueueDragLeave);
+document.getElementById('queue-switcher').addEventListener('drop', onQueueDrop);
 
 function populateDatalists() {
     const queueList = document.getElementById('queue-options');

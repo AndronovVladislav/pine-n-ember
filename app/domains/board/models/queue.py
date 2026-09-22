@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domains._base import Base, Id
 
@@ -8,3 +8,4 @@ class Queue(Base):
     label: Mapped[str]
     bg: Mapped[str]
     text_color: Mapped[str]
+    position: Mapped[int] = mapped_column(server_default='0')

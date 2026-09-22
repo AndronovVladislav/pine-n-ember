@@ -3,7 +3,18 @@ from fastapi import APIRouter, HTTPException
 from app.db import get_connection
 from app.domains.board import BoardRepository, SqlAlchemyBoardRepository
 from app.errors import handle_domain_errors
-from app.schemas import StatusOut, StatusRename, StatusReorder, TaskCreate, TaskMove, TaskOut, TaskUpdate
+from app.schemas import (
+    QueueOut,
+    QueueRename,
+    QueueReorder,
+    StatusOut,
+    StatusRename,
+    StatusReorder,
+    TaskCreate,
+    TaskMove,
+    TaskOut,
+    TaskUpdate,
+)
 
 router = APIRouter()
 
@@ -18,7 +29,9 @@ def get_board() -> dict:
         status_list, queue_list, task_list = repo.list_board()
         return {
             'statuses': [{'key': status.key, 'label': status.label, 'color': status.color} for status in status_list],
-            'queues': [{'key': q.key, 'label': q.label, 'bg': q.bg, 'text': q.text} for q in queue_list],
+            'queues': [
+                {'key': q.key, 'label': q.label, 'bg': q.bg, 'text': q.text, 'position': q.position} for q in queue_list
+            ],
             'tasks': [TaskOut.model_validate(task).model_dump() for task in task_list],
         }
 
@@ -85,3 +98,18 @@ def delete_status(status_key: str) -> None:
 def rename_status(status_key: str, payload: StatusRename) -> StatusOut:
     with _board_repo() as repo:
         return repo.rename_status(status_key, payload.label)
+
+
+@router.put('/queues/reorder')
+@handle_domain_errors
+def reorder_queues(payload: QueueReorder) -> dict:
+    with _board_repo() as repo:
+        repo.reorder_queues(payload.keys)
+        return {'ok': True}
+
+
+@router.patch('/queues/{queue_key}')
+@handle_domain_errors
+def rename_queue(queue_key: str, payload: QueueRename) -> QueueOut:
+    with _board_repo() as repo:
+        return repo.rename_queue(queue_key, payload.label)

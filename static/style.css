@@ -1005,7 +1005,7 @@ body::before {
     font-weight: 500;
     padding: 6px 12px;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, opacity 0.15s;
 }
 
 .range-btn:hover {
@@ -1016,6 +1016,31 @@ body::before {
 .range-btn.active {
     color: var(--bg);
     background: var(--accent);
+}
+
+.range-btn[draggable="true"] {
+    cursor: grab;
+}
+
+.range-btn.dragging {
+    opacity: 0.4;
+}
+
+.range-btn.drag-over {
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.range-btn-input {
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 5px 10px;
+    min-width: 0;
+    width: 90px;
 }
 
 .finance-totals {

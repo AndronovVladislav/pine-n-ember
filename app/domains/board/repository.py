@@ -60,10 +60,13 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
             return found.key
 
         count = conn.execute(select(func.count()).select_from(models.Queue)).scalar_one()
+        max_pos = conn.execute(select(func.coalesce(func.max(models.Queue.position), -1))).scalar_one()
         key = slug(label) or gen_id()
         bg = next_color(count) + '4d'
         text = next_color(count)
-        conn.execute(insert(models.Queue).values(key=key, label=label.upper(), bg=bg, text_color=text))
+        conn.execute(
+            insert(models.Queue).values(key=key, label=label.upper(), bg=bg, text_color=text, position=max_pos + 1)
+        )
         return key
 
     def list_board(self) -> tuple[list[Status], list[Queue], list[Task]]:
@@ -73,8 +76,8 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
             for row in conn.execute(select(models.Status).order_by(models.Status.position))
         ]
         queue_list = [
-            Queue(key=row.key, label=row.label, bg=row.bg, text=row.text_color)
-            for row in conn.execute(select(models.Queue))
+            Queue(key=row.key, label=row.label, bg=row.bg, text=row.text_color, position=row.position)
+            for row in conn.execute(select(models.Queue).order_by(models.Queue.position))
         ]
         task_list = [_task_from_row(row) for row in conn.execute(select(models.Task).order_by(models.Task.position))]
         return status_list, queue_list, task_list
@@ -212,3 +215,31 @@ class SqlAlchemyBoardRepository(SqlAlchemyRepository):
         conn.execute(update(models.Status).where(models.Status.key == status_key).values(label=label))
         conn.commit()
         return Status(key=row.key, label=label, color=row.color)
+
+    def reorder_queues(self, keys: list[str]) -> None:
+        conn = self._conn
+        existing = {row.key for row in conn.execute(select(models.Queue.key))}
+        if set(keys) != existing:
+            raise InvalidOperation('keys must match existing queues exactly')
+        for position, key in enumerate(keys):
+            conn.execute(update(models.Queue).where(models.Queue.key == key).values(position=position))
+        conn.commit()
+
+    def rename_queue(self, queue_key: str, label: str) -> Queue:
+        conn = self._conn
+        label = label.strip().upper()
+        if not label:
+            raise InvalidOperation('label is required')
+        row = conn.execute(select(models.Queue).where(models.Queue.key == queue_key)).first()
+        if not row:
+            raise NotFound(f'queue {queue_key!r} not found')
+        duplicate = conn.execute(
+            select(models.Queue.key).where(
+                func.lower(models.Queue.label) == label.lower(), models.Queue.key != queue_key
+            )
+        ).first()
+        if duplicate:
+            raise InvalidOperation(f'queue with label {label!r} already exists')
+        conn.execute(update(models.Queue).where(models.Queue.key == queue_key).values(label=label))
+        conn.commit()
+        return Queue(key=row.key, label=label, bg=row.bg, text=row.text_color, position=row.position)

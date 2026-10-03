@@ -1190,6 +1190,7 @@ const financeState = {
     categories: {expense: [], income: []},
     dashboard: null,
     categoryColors: {},
+    selectedCategory: null,
 };
 
 function financeCategoryColor(categoryId) {
@@ -1254,6 +1255,7 @@ function applyFinanceCustomRange() {
 
 function setFinanceKind(kind) {
     financeState.kind = kind;
+    document.getElementById('finance-op-description-field').classList.toggle('hidden', kind !== 'expense');
     renderFinanceCategoryOptions();
 }
 
@@ -1311,11 +1313,20 @@ async function submitFinanceOperation() {
         const endpoint = financeState.kind === 'expense' ? '/finance/expenses' : '/finance/incomes';
         await api(endpoint, {
             method: 'POST',
-            body: JSON.stringify({category_id: categoryId, amount: Number(amount), currency: financeState.currency, date}),
+            body: JSON.stringify({
+                category_id: categoryId,
+                amount: Number(amount),
+                currency: financeState.currency,
+                date,
+                ...(financeState.kind === 'expense'
+                    ? {description: document.getElementById('finance-op-description').value.trim() || null}
+                    : {}),
+            }),
         });
 
         document.getElementById('finance-op-amount').value = '';
         document.getElementById('finance-new-category-name').value = '';
+        document.getElementById('finance-op-description').value = '';
         showToast('Операция добавлена', 'success');
         await loadFinanceCategories();
         select.value = categoryId;
@@ -1358,6 +1369,10 @@ async function deleteFinanceCategory(categoryId) {
 
     try {
         await api(`/finance/categories/${categoryId}`, {method: 'DELETE'});
+        if (financeState.selectedCategory?.id === categoryId) {
+            financeState.selectedCategory = null;
+            location.hash = '#/finance';
+        }
         showToast('Категория удалена', 'success');
         await loadFinanceCategories();
         await refreshFinanceDashboard();
@@ -1371,11 +1386,11 @@ function financeCategoryRowHtml(row, total) {
     const color = financeCategoryColor(row.category_id);
     const pct = total > 0 ? Math.round((parseFloat(row.amount_rub) / total) * 100) : 0;
     return `
-        <li style="--cat-color:${color}">
+        <li style="--cat-color:${color}" onclick="openFinanceCategoryOperations('${row.category_id}')">
             <span class="finance-cat-name-wrap">
                 <span class="finance-cat-name">${escapeHtml(row.category_name)}</span>
-                <button class="finance-cat-edit" type="button" title="Переименовать" onclick="renameFinanceCategory('${row.category_id}')">${editIcon(11)}</button>
-                <button class="finance-cat-edit" type="button" title="Удалить" onclick="deleteFinanceCategory('${row.category_id}')">${trashIcon(11)}</button>
+                <button class="finance-cat-edit" type="button" title="Переименовать" onclick="event.stopPropagation(); renameFinanceCategory('${row.category_id}')">${editIcon(11)}</button>
+                <button class="finance-cat-edit" type="button" title="Удалить" onclick="event.stopPropagation(); deleteFinanceCategory('${row.category_id}')">${trashIcon(11)}</button>
             </span>
             <span class="finance-cat-right"><span class="finance-cat-pct">${pct}%</span>${formatRub(row.amount_rub)}</span>
             <div class="finance-cat-track"><div class="finance-cat-fill" style="width:${pct}%"></div></div>
@@ -1391,22 +1406,82 @@ function renderFinanceCategoryList(elementId, breakdown, total) {
     list.innerHTML = breakdown.map((row) => financeCategoryRowHtml(row, total)).join('');
 }
 
-function renderFinanceRecentOperations(operations) {
-    const list = document.getElementById('finance-recent-operations');
-    if (operations.length === 0) {
-        list.replaceChildren(financeEmptyItem());
-        return;
+function selectedFinanceCategoryName(categoryId) {
+    const category = [...financeState.categories.expense, ...financeState.categories.income].find((item) => item.id === categoryId);
+    return findFinanceCategoryName(categoryId) || category?.name || financeState.selectedCategory?.name || '';
+}
+
+async function openFinanceCategoryOperations(categoryId) {
+    financeState.selectedCategory = {id: categoryId, name: selectedFinanceCategoryName(categoryId)};
+    location.hash = `#/finance/categories/${categoryId}`;
+}
+
+async function editFinanceExpenseDescription(operation) {
+    const description = prompt('Описание траты', operation.description || '');
+    if (description === null) return;
+    const trimmed = description.trim() || null;
+    if (trimmed === operation.description) return;
+
+    try {
+        await api(`/finance/operations/${operation.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({description: trimmed}),
+        });
+        showToast('Описание сохранено', 'success');
+        if (financeState.selectedCategory?.id === operation.category_id) {
+            await renderFinanceCategoryOperations(operation.category_id);
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось сохранить описание. Попробуйте ещё раз');
     }
-    list.innerHTML = operations.map((op) => {
-        const sign = op.kind === 'expense' ? '−' : '+';
-        const amtClass = op.kind === 'expense' ? 'neg' : 'pos';
-        const meta = op.currency === 'BYN' ? ` · ${op.amount} BYN` : '';
-        return `
-            <li>
-                <span>${escapeHtml(op.category_name)}<span class="finance-recent-meta">${op.date}${meta}</span></span>
-                <span class="finance-amt ${amtClass}">${sign}${formatRub(op.amount_rub)}</span>
-            </li>`;
-    }).join('');
+}
+
+async function renderFinanceCategoryOperations(categoryId) {
+    const selectedCategory = financeState.selectedCategory;
+    if (!selectedCategory || selectedCategory.id !== categoryId) {
+        financeState.selectedCategory = {id: categoryId, name: selectedFinanceCategoryName(categoryId)};
+    }
+
+    const title = document.getElementById('finance-category-operations-title');
+    const list = document.getElementById('finance-category-operations-list');
+    const {from, to} = financeState.range;
+    title.textContent = selectedFinanceCategoryName(categoryId) || 'Операции категории';
+    list.replaceChildren(financeEmptyItem());
+
+    try {
+        const operations = await api(
+            `/finance/categories/${categoryId}/operations?date_from=${from}&date_to=${to}`
+        );
+        if (financeState.selectedCategory?.id !== categoryId) return;
+        if (operations.length === 0) {
+            list.replaceChildren(financeEmptyItem());
+            return;
+        }
+        list.innerHTML = operations.map((operation) => {
+            const sign = operation.kind === 'expense' ? '−' : '+';
+            const amountClass = operation.kind === 'expense' ? 'neg' : 'pos';
+            const description = operation.description
+                ? `<span class="finance-recent-meta">${escapeHtml(operation.description)}</span>`
+                : '';
+            return `
+                <li>
+                    <span>${operation.date}${description}${operation.kind === 'expense'
+                        ? `<button class="finance-cat-edit" type="button" title="Редактировать описание" aria-label="Редактировать описание" data-operation-id="${operation.id}">${editIcon(11)}</button>`
+                        : ''}</span>
+                    <span class="finance-amt ${amountClass}">${sign}${operation.amount} ${operation.currency}</span>
+                </li>`;
+        }).join('');
+        list.querySelectorAll('[data-operation-id]').forEach((button) => {
+            const operation = operations.find((item) => item.id === button.dataset.operationId);
+            button.addEventListener('click', () => editFinanceExpenseDescription(operation));
+        });
+    } catch (err) {
+        console.error(err);
+        if (financeState.selectedCategory?.id === categoryId) {
+            showToast('Не удалось загрузить операции категории. Попробуйте ещё раз.');
+        }
+    }
 }
 
 function renderFinanceSparkline(series) {
@@ -1463,8 +1538,6 @@ function renderFinanceDashboard(data) {
     document.getElementById('finance-balance-total').textContent = formatRub(data.balance_rub);
 
     renderFinanceCategoryList('finance-expense-categories', data.expense_by_category, parseFloat(data.expense_total_rub));
-    renderFinanceCategoryList('finance-income-categories', data.income_by_category, parseFloat(data.income_total_rub));
-    renderFinanceRecentOperations(data.recent_operations);
     renderFinanceSparkline(data.balance_series);
 }
 
@@ -1495,13 +1568,16 @@ async function initFinanceView() {
 
 async function handleRoute() {
     const taskMatch = location.hash.match(/^#\/task\/(.+)$/);
+    const financeCategoryMatch = location.hash.match(/^#\/finance\/categories\/(.+)$/);
     const isKnowledge = location.hash === '#/knowledge';
-    const isFinance = location.hash === '#/finance';
+    const isFinance = location.hash === '#/finance' || Boolean(financeCategoryMatch);
     const appHeader = document.getElementById('app-header');
     const boardView = document.getElementById('board-view');
     const detailOverlay = document.getElementById('detail-overlay');
     const knowledgeView = document.getElementById('knowledge-view');
     const financeView = document.getElementById('finance-view');
+    const financeDashboard = document.getElementById('finance-dashboard');
+    const financeCategoryView = document.getElementById('finance-category-view');
     const alignControl = document.getElementById('align-control');
 
     appHeader.classList.remove('hidden');
@@ -1533,7 +1609,10 @@ async function handleRoute() {
         await refreshKnowledge();
     } else if (isFinance) {
         financeView.classList.remove('hidden');
+        financeDashboard.classList.toggle('hidden', Boolean(financeCategoryMatch));
+        financeCategoryView.classList.toggle('hidden', !financeCategoryMatch);
         await initFinanceView();
+        if (financeCategoryMatch) await renderFinanceCategoryOperations(financeCategoryMatch[1]);
     } else {
         boardView.classList.remove('hidden');
         render();

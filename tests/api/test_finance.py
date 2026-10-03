@@ -36,6 +36,22 @@ def fixed_rate(rate):
     return _fake
 
 
+@pytest.fixture
+def expense_with_description(client):
+    """Создаёт трату с описанием для проверки её редактирования"""
+    category = create_expense_category(client)
+    return client.post(
+        '/api/finance/expenses',
+        json={
+            'category_id': category['id'],
+            'amount': 100,
+            'currency': 'RUB',
+            'date': str(TODAY),
+            'description': 'Старое описание',
+        },
+    ).json()
+
+
 @pytest.mark.spec('0012')
 class TestExpenseCategories:
     def test_create_row_is_persisted_fully(self, client, db_connection):
@@ -244,6 +260,43 @@ class TestCreateIncome:
 
 @pytest.mark.spec('0012')
 class TestUpdateOperation:
+    @pytest.mark.parametrize('description', ['Новое описание', '', None])
+    def test_description_provided__updates_only_description(
+        self,
+        client,
+        db_connection,
+        expense_with_description,
+        description,
+    ):
+        """
+        Проверяет изменение и очистку описания траты
+
+        Ожидание: меняется только описание, остальные поля записи сохраняются
+        """
+        operation = expense_with_description
+        expected = operation_row_as_dict(db_connection, operation['id']) | {'description': description}
+
+        response = client.patch(f'/api/finance/operations/{operation["id"]}', json={'description': description})
+
+        assert response.status_code == 200
+        assert response.json() == operation | {'description': description}
+        assert operation_row_as_dict(db_connection, operation['id']) == expected
+
+    def test_description_omitted__preserves_description(self, client, db_connection, expense_with_description):
+        """
+        Проверяет обновление траты без поля описания
+
+        Ожидание: описание и все остальные поля записи сохраняются
+        """
+        operation = expense_with_description
+        expected = operation_row_as_dict(db_connection, operation['id'])
+
+        response = client.patch(f'/api/finance/operations/{operation["id"]}', json={})
+
+        assert response.status_code == 200
+        assert response.json() == operation
+        assert operation_row_as_dict(db_connection, operation['id']) == expected
+
     def test_amount_only_change_does_not_refetch_rate(self, client, monkeypatch):
         """
         Тест проверяет частичное обновление суммы операции без смены валюты.
@@ -354,6 +407,33 @@ class TestDeleteOperation:
 
 @pytest.mark.spec('0012')
 class TestDashboard:
+    def test_expense_categories__sorted_by_descending_period_total(self, client):
+        """
+        Проверяет сортировку категорий по сумме нескольких трат за выбранный период
+
+        Ожидание: категории идут по убыванию суммы, траты вне периода не учитываются
+        """
+        categories = [create_expense_category(client, name=name) for name in ['Еда', 'Дом', 'Транспорт']]
+        for category, amount, on_date in [
+            (categories[0], 100, TODAY),
+            (categories[1], 200, TODAY),
+            (categories[2], 50, TODAY),
+            (categories[2], 250, TODAY),
+            (categories[2], 1000, TODAY - timedelta(days=1)),
+        ]:
+            client.post(
+                '/api/finance/expenses',
+                json={'category_id': category['id'], 'amount': amount, 'currency': 'RUB', 'date': str(on_date)},
+            )
+
+        response = client.get('/api/finance/dashboard', params={'date_from': str(TODAY), 'date_to': str(TODAY)})
+
+        assert response.status_code == 200
+        assert response.json()['expense_by_category'] == [
+            {'category_id': category['id'], 'category_name': category['name'], 'amount_rub': amount}
+            for category, amount in zip(reversed(categories), ['300.00', '200.00', '100.00'])
+        ]
+
     def test_requires_date_range_params(self, client):
         """
         Тест проверяет вызов /api/finance/dashboard без обязательных параметров периода.
@@ -451,3 +531,83 @@ class TestDashboard:
         assert recent['kind'] == 'expense'
         assert recent['amount'] == '250.00'
         assert recent['amount_rub'] == '250.00'
+
+
+@pytest.mark.spec('0019')
+class TestCategoryOperations:
+    def test_date_range__returns_category_operations_in_reverse_date_order(self, client):
+        """
+        Тест проверяет операции выбранной категории через GET /api/finance/categories/{id}/operations.
+
+        Ожидание: ответ содержит все и только операции категории внутри периода, от новой даты к старой
+        """
+        food = create_expense_category(client, name='Продукты')
+        transport = create_expense_category(client, name='Транспорт')
+        previous_day = TODAY - timedelta(days=1)
+        outside_date = TODAY - timedelta(days=2)
+        first_operation = client.post(
+            '/api/finance/expenses',
+            json={
+                'category_id': food['id'],
+                'amount': 350,
+                'currency': 'RUB',
+                'date': str(previous_day),
+                'description': 'Покупки на неделю',
+            },
+        ).json()
+        second_operation = client.post(
+            '/api/finance/expenses',
+            json={'category_id': food['id'], 'amount': 500, 'currency': 'RUB', 'date': str(TODAY)},
+        ).json()
+        client.post(
+            '/api/finance/expenses',
+            json={'category_id': food['id'], 'amount': 100, 'currency': 'RUB', 'date': str(outside_date)},
+        )
+        client.post(
+            '/api/finance/expenses',
+            json={'category_id': transport['id'], 'amount': 200, 'currency': 'RUB', 'date': str(TODAY)},
+        )
+
+        response = client.get(
+            f'/api/finance/categories/{food["id"]}/operations',
+            params={'date_from': str(previous_day), 'date_to': str(TODAY)},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                'id': second_operation['id'],
+                'kind': 'expense',
+                'category_id': food['id'],
+                'amount': '500.00',
+                'currency': 'RUB',
+                'amount_rub': '500.00',
+                'rate': '1.000000',
+                'date': str(TODAY),
+                'description': None,
+            },
+            {
+                'id': first_operation['id'],
+                'kind': 'expense',
+                'category_id': food['id'],
+                'amount': '350.00',
+                'currency': 'RUB',
+                'amount_rub': '350.00',
+                'rate': '1.000000',
+                'date': str(previous_day),
+                'description': 'Покупки на неделю',
+            },
+        ]
+
+    def test_missing_category__returns_404(self, client):
+        """
+        Тест проверяет запрос операций отсутствующей категории.
+
+        Ожидание: API возвращает 404
+        """
+        response = client.get(
+            '/api/finance/categories/missing/operations',
+            params={'date_from': str(TODAY), 'date_to': str(TODAY)},
+        )
+
+        assert response.status_code == 404

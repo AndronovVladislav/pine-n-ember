@@ -17,7 +17,15 @@ class FinanceRepository(Repository, Protocol):
 
     def delete_category(self, category_id: str) -> None: ...
 
-    def create_operation(self, kind: str, category_id: str, amount: Decimal, currency: str, on_date: date) -> Operation:
+    def create_operation(
+        self,
+        kind: str,
+        category_id: str,
+        amount: Decimal,
+        currency: str,
+        on_date: date,
+        description: str | None = None,
+    ) -> Operation:
         """Бросает NotFound, если категории нет; InvalidOperation, если у категории другой kind;
         ExternalServiceUnavailable, если не удалось получить курс BYN->RUB."""
         ...
@@ -30,11 +38,20 @@ class FinanceRepository(Repository, Protocol):
         amount: Decimal | None = None,
         currency: str | None = None,
         on_date: date | None = None,
+        description: str | None = None,
+        description_provided: bool = False,
     ) -> Operation:
         """Бросает NotFound, если операции или новой категории нет; InvalidOperation, если новая
         категория другого kind; ExternalServiceUnavailable при смене валюты, если курс недоступен."""
         ...
 
     def delete_operation(self, operation_id: str) -> None: ...
+
+    def list_category_operations_in_date_range(
+        self,
+        category_id: str,
+        date_from: date,
+        date_to: date,
+    ) -> list[Operation]: ...
 
     def get_dashboard(self, date_from: date, date_to: date) -> FinanceDashboard: ...

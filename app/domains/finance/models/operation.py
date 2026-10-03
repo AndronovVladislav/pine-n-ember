@@ -17,3 +17,4 @@ class Operation(Base):
     amount_rub: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     rate: Mapped[Decimal] = mapped_column(Numeric(12, 6))
     date: Mapped[date]
+    description: Mapped[str | None]

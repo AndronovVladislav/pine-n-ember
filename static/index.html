@@ -82,6 +82,7 @@
 </section>
 
 <section id="finance-view" class="hidden">
+    <div id="finance-dashboard">
     <div class="header">
         <div></div>
         <div class="header-actions">
@@ -117,6 +118,10 @@
             <label class="finance-ledger-field finance-ledger-grow hidden" id="finance-new-category-field">
                 <span>Название категории</span>
                 <input type="text" id="finance-new-category-name" placeholder="Например: Такси">
+            </label>
+            <label class="finance-ledger-field finance-ledger-grow" id="finance-op-description-field">
+                <span>Описание</span>
+                <input type="text" id="finance-op-description" placeholder="Например: продукты на неделю">
             </label>
             <label class="finance-ledger-field finance-ledger-amount">
                 <span>Сумма</span>
@@ -158,10 +163,6 @@
                 <h2 class="finance-section-title">Расходы по категориям</h2>
                 <ul class="finance-cat-list" id="finance-expense-categories"></ul>
 
-                <div class="finance-panel-card">
-                    <h2 class="finance-section-title">Последние операции</h2>
-                    <ul class="finance-recent-list" id="finance-recent-operations"></ul>
-                </div>
             </div>
 
             <div>
@@ -170,14 +171,20 @@
                     <svg class="finance-spark hidden" id="finance-spark" viewBox="0 0 260 84" preserveAspectRatio="none" fill="none" aria-hidden="true"></svg>
                     <p class="finance-empty-note" id="finance-spark-empty">Пока нет операций за период</p>
                 </div>
-
-            <h2 class="finance-section-title">Доходы по категориям</h2>
-            <div class="finance-panel-card">
-                <ul class="finance-income-list" id="finance-income-categories"></ul>
             </div>
         </div>
-        </div>
     </div>
+    </div>
+
+    <section class="finance-category-page hidden" id="finance-category-view" aria-live="polite">
+        <div class="finance-category-page-header">
+            <a class="finance-back-link" href="#/finance">Назад к финансам</a>
+            <h1 id="finance-category-operations-title">Операции категории</h1>
+        </div>
+        <div class="finance-panel-card">
+            <ul class="finance-category-operations-list" id="finance-category-operations-list"></ul>
+        </div>
+    </section>
 </section>
 
 <div class="overlay" id="detail-overlay">

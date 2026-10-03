@@ -1187,6 +1187,7 @@ const financeState = {
     kind: 'expense',
     currency: 'RUB',
     range: {from: null, to: null},
+    rangePreset: 'month',
     categories: {expense: [], income: []},
     dashboard: null,
     categoryColors: {},
@@ -1227,12 +1228,55 @@ function financePresetRange(preset) {
     return {from, to};
 }
 
+function saveFinanceRange() {
+    try {
+        localStorage.setItem('financeRange', JSON.stringify({
+            preset: financeState.rangePreset,
+            ...financeState.range,
+        }));
+    } catch {
+        /* Хранилище недоступно, период останется выбранным до перезагрузки */
+    }
+}
+
+function restoreFinanceRange() {
+    let saved;
+    try {
+        saved = JSON.parse(localStorage.getItem('financeRange'));
+    } catch {
+        /* Нет доступных сохранённых данных, используем текущий месяц */
+    }
+    if (saved?.preset === 'month' || saved?.preset === '30d') {
+        financeState.rangePreset = saved.preset;
+        financeState.range = financePresetRange(saved.preset);
+    } else if (saved?.preset === 'custom' && [saved.from, saved.to].every(value =>
+        typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+        Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value
+    ) && saved.from <= saved.to) {
+        financeState.rangePreset = 'custom';
+        financeState.range = {from: saved.from, to: saved.to};
+    } else {
+        financeState.rangePreset = 'month';
+        financeState.range = financePresetRange('month');
+    }
+    if (financeState.rangePreset === 'custom') {
+        showFinanceCustomRange();
+    } else {
+        document.getElementById('finance-custom-range').classList.add('hidden');
+        document.querySelectorAll('#finance-range-control .range-btn').forEach((button) => {
+            button.classList.toggle('active', button.dataset.range === financeState.rangePreset);
+        });
+    }
+}
+
 function setFinanceRangePreset(preset) {
     document.getElementById('finance-custom-range').classList.add('hidden');
     document.querySelectorAll('#finance-range-control .range-btn').forEach((b) => {
         b.classList.toggle('active', b.dataset.range === preset);
     });
     financeState.range = financePresetRange(preset);
+    financeState.rangePreset = preset;
+    saveFinanceRange();
     refreshFinanceDashboard();
 }
 
@@ -1250,6 +1294,8 @@ function applyFinanceCustomRange() {
     const to = document.getElementById('finance-range-to').value;
     if (!from || !to) return;
     financeState.range = {from, to};
+    financeState.rangePreset = 'custom';
+    saveFinanceRange();
     refreshFinanceDashboard();
 }
 
@@ -1559,7 +1605,7 @@ async function refreshFinanceDashboard() {
 async function initFinanceView() {
     document.getElementById('subtitle').textContent = '';
     if (!financeState.range.from) {
-        financeState.range = financePresetRange('month');
+        restoreFinanceRange();
         document.getElementById('finance-op-date').value = financeToday();
     }
     await loadFinanceCategories();

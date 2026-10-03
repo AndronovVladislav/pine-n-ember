@@ -110,6 +110,8 @@ def update_operation(operation_id: str, payload: OperationUpdate) -> OperationOu
             amount=payload.amount,
             currency=payload.currency,
             on_date=payload.date,
+            description=payload.description,
+            description_provided='description' in payload.model_fields_set,
         )
 
 

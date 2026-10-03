@@ -122,6 +122,8 @@ class SqlAlchemyFinanceRepository(SqlAlchemyRepository):
         amount: Decimal | None = None,
         currency: str | None = None,
         on_date: date | None = None,
+        description: str | None = None,
+        description_provided: bool = False,
     ) -> Operation:
         conn = self._conn
         row = conn.execute(select(models.Operation).where(models.Operation.id == operation_id)).first()
@@ -161,6 +163,7 @@ class SqlAlchemyFinanceRepository(SqlAlchemyRepository):
                 amount_rub=sign * new_amount_rub,
                 rate=new_rate,
                 date=new_date,
+                description=description if description_provided and kind == 'expense' else row.description,
             )
         )
         conn.commit()
@@ -253,7 +256,7 @@ class SqlAlchemyFinanceRepository(SqlAlchemyRepository):
             balance_rub=income_total - expense_total,
             expense_by_category=[
                 CategoryBreakdown(category_id=cid, category_name=name, amount_rub=amt)
-                for cid, (name, amt) in expense_by_category.items()
+                for cid, (name, amt) in sorted(expense_by_category.items(), key=lambda item: -item[1][1])
             ],
             income_by_category=[
                 CategoryBreakdown(category_id=cid, category_name=name, amount_rub=amt)

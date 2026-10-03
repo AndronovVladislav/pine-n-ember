@@ -187,6 +187,7 @@ class OperationUpdate(BaseModel):
     amount: Decimal | None = Field(default=None, gt=0)
     currency: Literal['BYN', 'RUB'] | None = None
     date: datetime.date | None = None
+    description: str | None = None
 
 
 class CategoryBreakdownOut(BaseModel):

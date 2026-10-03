@@ -38,6 +38,8 @@ class FinanceRepository(Repository, Protocol):
         amount: Decimal | None = None,
         currency: str | None = None,
         on_date: date | None = None,
+        description: str | None = None,
+        description_provided: bool = False,
     ) -> Operation:
         """Бросает NotFound, если операции или новой категории нет; InvalidOperation, если новая
         категория другого kind; ExternalServiceUnavailable при смене валюты, если курс недоступен."""

@@ -1406,24 +1406,6 @@ function renderFinanceCategoryList(elementId, breakdown, total) {
     list.innerHTML = breakdown.map((row) => financeCategoryRowHtml(row, total)).join('');
 }
 
-function renderFinanceRecentOperations(operations) {
-    const list = document.getElementById('finance-recent-operations');
-    if (operations.length === 0) {
-        list.replaceChildren(financeEmptyItem());
-        return;
-    }
-    list.innerHTML = operations.map((op) => {
-        const sign = op.kind === 'expense' ? '−' : '+';
-        const amtClass = op.kind === 'expense' ? 'neg' : 'pos';
-        const meta = op.currency === 'BYN' ? ` · ${op.amount} BYN` : '';
-        return `
-            <li>
-                <span>${escapeHtml(op.category_name)}<span class="finance-recent-meta">${op.date}${meta}</span></span>
-                <span class="finance-amt ${amtClass}">${sign}${formatRub(op.amount_rub)}</span>
-            </li>`;
-    }).join('');
-}
-
 function selectedFinanceCategoryName(categoryId) {
     const category = [...financeState.categories.expense, ...financeState.categories.income].find((item) => item.id === categoryId);
     return findFinanceCategoryName(categoryId) || category?.name || financeState.selectedCategory?.name || '';
@@ -1432,6 +1414,27 @@ function selectedFinanceCategoryName(categoryId) {
 async function openFinanceCategoryOperations(categoryId) {
     financeState.selectedCategory = {id: categoryId, name: selectedFinanceCategoryName(categoryId)};
     location.hash = `#/finance/categories/${categoryId}`;
+}
+
+async function editFinanceExpenseDescription(operation) {
+    const description = prompt('Описание траты', operation.description || '');
+    if (description === null) return;
+    const trimmed = description.trim() || null;
+    if (trimmed === operation.description) return;
+
+    try {
+        await api(`/finance/operations/${operation.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({description: trimmed}),
+        });
+        showToast('Описание сохранено', 'success');
+        if (financeState.selectedCategory?.id === operation.category_id) {
+            await renderFinanceCategoryOperations(operation.category_id);
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Не удалось сохранить описание. Попробуйте ещё раз');
+    }
 }
 
 async function renderFinanceCategoryOperations(categoryId) {
@@ -1463,10 +1466,16 @@ async function renderFinanceCategoryOperations(categoryId) {
                 : '';
             return `
                 <li>
-                    <span>${operation.date}${description}</span>
+                    <span>${operation.date}${description}${operation.kind === 'expense'
+                        ? `<button class="finance-cat-edit" type="button" title="Редактировать описание" aria-label="Редактировать описание" data-operation-id="${operation.id}">${editIcon(11)}</button>`
+                        : ''}</span>
                     <span class="finance-amt ${amountClass}">${sign}${operation.amount} ${operation.currency}</span>
                 </li>`;
         }).join('');
+        list.querySelectorAll('[data-operation-id]').forEach((button) => {
+            const operation = operations.find((item) => item.id === button.dataset.operationId);
+            button.addEventListener('click', () => editFinanceExpenseDescription(operation));
+        });
     } catch (err) {
         console.error(err);
         if (financeState.selectedCategory?.id === categoryId) {
@@ -1529,8 +1538,6 @@ function renderFinanceDashboard(data) {
     document.getElementById('finance-balance-total').textContent = formatRub(data.balance_rub);
 
     renderFinanceCategoryList('finance-expense-categories', data.expense_by_category, parseFloat(data.expense_total_rub));
-    renderFinanceCategoryList('finance-income-categories', data.income_by_category, parseFloat(data.income_total_rub));
-    renderFinanceRecentOperations(data.recent_operations);
     renderFinanceSparkline(data.balance_series);
 }
 

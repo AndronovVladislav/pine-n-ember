@@ -451,3 +451,83 @@ class TestDashboard:
         assert recent['kind'] == 'expense'
         assert recent['amount'] == '250.00'
         assert recent['amount_rub'] == '250.00'
+
+
+@pytest.mark.spec('0019')
+class TestCategoryOperations:
+    def test_date_range__returns_category_operations_in_reverse_date_order(self, client):
+        """
+        Тест проверяет операции выбранной категории через GET /api/finance/categories/{id}/operations.
+
+        Ожидание: ответ содержит все и только операции категории внутри периода, от новой даты к старой
+        """
+        food = create_expense_category(client, name='Продукты')
+        transport = create_expense_category(client, name='Транспорт')
+        previous_day = TODAY - timedelta(days=1)
+        outside_date = TODAY - timedelta(days=2)
+        first_operation = client.post(
+            '/api/finance/expenses',
+            json={
+                'category_id': food['id'],
+                'amount': 350,
+                'currency': 'RUB',
+                'date': str(previous_day),
+                'description': 'Покупки на неделю',
+            },
+        ).json()
+        second_operation = client.post(
+            '/api/finance/expenses',
+            json={'category_id': food['id'], 'amount': 500, 'currency': 'RUB', 'date': str(TODAY)},
+        ).json()
+        client.post(
+            '/api/finance/expenses',
+            json={'category_id': food['id'], 'amount': 100, 'currency': 'RUB', 'date': str(outside_date)},
+        )
+        client.post(
+            '/api/finance/expenses',
+            json={'category_id': transport['id'], 'amount': 200, 'currency': 'RUB', 'date': str(TODAY)},
+        )
+
+        response = client.get(
+            f'/api/finance/categories/{food["id"]}/operations',
+            params={'date_from': str(previous_day), 'date_to': str(TODAY)},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                'id': second_operation['id'],
+                'kind': 'expense',
+                'category_id': food['id'],
+                'amount': '500.00',
+                'currency': 'RUB',
+                'amount_rub': '500.00',
+                'rate': '1.000000',
+                'date': str(TODAY),
+                'description': None,
+            },
+            {
+                'id': first_operation['id'],
+                'kind': 'expense',
+                'category_id': food['id'],
+                'amount': '350.00',
+                'currency': 'RUB',
+                'amount_rub': '350.00',
+                'rate': '1.000000',
+                'date': str(previous_day),
+                'description': 'Покупки на неделю',
+            },
+        ]
+
+    def test_missing_category__returns_404(self, client):
+        """
+        Тест проверяет запрос операций отсутствующей категории.
+
+        Ожидание: API возвращает 404
+        """
+        response = client.get(
+            '/api/finance/categories/missing/operations',
+            params={'date_from': str(TODAY), 'date_to': str(TODAY)},
+        )
+
+        assert response.status_code == 404

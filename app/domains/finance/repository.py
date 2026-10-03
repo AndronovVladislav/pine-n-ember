@@ -34,6 +34,7 @@ def _operation_from_row(row) -> Operation:
         amount_rub=abs(row.amount_rub),
         rate=row.rate,
         date=row.date,
+        description=row.description,
     )
 
 
@@ -77,7 +78,15 @@ class SqlAlchemyFinanceRepository(SqlAlchemyRepository):
         self._conn.execute(delete(models.Category).where(models.Category.id == category_id))
         self._conn.commit()
 
-    def create_operation(self, kind: str, category_id: str, amount: Decimal, currency: str, on_date: date) -> Operation:
+    def create_operation(
+        self,
+        kind: str,
+        category_id: str,
+        amount: Decimal,
+        currency: str,
+        on_date: date,
+        description: str | None = None,
+    ) -> Operation:
         conn = self._conn
         category = conn.execute(select(models.Category).where(models.Category.id == category_id)).first()
         if not category:
@@ -98,6 +107,7 @@ class SqlAlchemyFinanceRepository(SqlAlchemyRepository):
                 amount_rub=sign * amount_rub,
                 rate=rate,
                 date=on_date,
+                description=description if kind == 'expense' else None,
             )
         )
         conn.commit()
@@ -160,6 +170,29 @@ class SqlAlchemyFinanceRepository(SqlAlchemyRepository):
     def delete_operation(self, operation_id: str) -> None:
         self._conn.execute(delete(models.Operation).where(models.Operation.id == operation_id))
         self._conn.commit()
+
+    def list_category_operations_in_date_range(
+        self,
+        category_id: str,
+        date_from: date,
+        date_to: date,
+    ) -> list[Operation]:
+        category = self._conn.execute(
+            select(models.Category).where(models.Category.id == category_id)
+        ).first()
+        if not category:
+            raise NotFound(f'category {category_id!r} not found')
+
+        rows = self._conn.execute(
+            select(models.Operation)
+            .where(
+                models.Operation.category_id == category_id,
+                models.Operation.date >= date_from,
+                models.Operation.date <= date_to,
+            )
+            .order_by(models.Operation.date.desc(), models.Operation.id.desc())
+        )
+        return [_operation_from_row(row) for row in rows]
 
     def get_dashboard(self, date_from: date, date_to: date) -> FinanceDashboard:
         conn = self._conn

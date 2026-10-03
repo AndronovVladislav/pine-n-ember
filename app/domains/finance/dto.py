@@ -20,6 +20,7 @@ class Operation:
     amount_rub: Decimal
     rate: Decimal
     date: date
+    description: str | None
 
 
 @dataclass(frozen=True)

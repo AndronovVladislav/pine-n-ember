@@ -72,11 +72,25 @@ def delete_category(category_id: str) -> None:
         repo.delete_category(category_id)
 
 
+@router.get('/finance/categories/{category_id}/operations')
+@handle_domain_errors
+def list_category_operations(category_id: str, date_from: date, date_to: date) -> list[OperationOut]:
+    with _finance_repo() as repo:
+        return repo.list_category_operations_in_date_range(category_id, date_from, date_to)
+
+
 @router.post('/finance/expenses')
 @handle_domain_errors
 def create_expense(payload: ExpenseOperationCreate) -> OperationOut:
     with _finance_repo() as repo:
-        return repo.create_operation('expense', payload.category_id, payload.amount, payload.currency, payload.date)
+        return repo.create_operation(
+            'expense',
+            payload.category_id,
+            payload.amount,
+            payload.currency,
+            payload.date,
+            payload.description,
+        )
 
 
 @router.post('/finance/incomes')

@@ -712,6 +712,10 @@ body::before {
     width: 360px;
 }
 
+#concept-overlay .modal {
+    width: min(468px, calc(100vw - 32px));
+}
+
 .modal h3 {
     margin: 0 0 16px;
     font-size: 15px;

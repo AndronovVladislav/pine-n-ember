@@ -628,6 +628,7 @@ body::before {
     color: var(--text-secondary);
     margin: 6px 0 0;
     line-height: 1.4;
+    white-space: pre-wrap;
 }
 
 .topic-add-concept {
@@ -728,7 +729,7 @@ body::before {
     margin-bottom: 6px;
 }
 
-.field input, .field select {
+.field input, .field select, .field textarea {
     width: 100%;
     background: var(--card);
     border: 1px solid var(--border-strong);
@@ -739,12 +740,16 @@ body::before {
     font-family: inherit;
 }
 
-.field input:focus, .field select:focus {
+.field textarea {
+    resize: vertical;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
     outline: none;
     border-color: var(--text-secondary);
 }
 
-.field input:focus-visible, .field select:focus-visible {
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible {
     box-shadow: var(--focus-ring);
 }
 

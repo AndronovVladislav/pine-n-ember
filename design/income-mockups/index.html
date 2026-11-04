@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Доходы — варианты Pine & Ember</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="base.css">
+    <style>
+        body { padding-bottom: 140px; }
+        *, *::before, *::after { animation: none !important; }
+        main, .mockup-note { max-width: 1240px; margin: 0 auto; position: relative; z-index: 1; }
+        .mockup-note { margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
+        .mockup-note p { margin: 6px 0 0; font-size: 13px; color: var(--text-secondary); }
+        .mockup-label { color: var(--accent); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+        .period { display: flex; justify-content: space-between; align-items: center; margin: 24px 0 16px; }
+        .period small { color: var(--text-secondary); }
+        .layout { display: grid; gap: 24px; align-items: start; }
+        .layout.paired { grid-template-columns: 1fr 1fr; }
+        .layout.stacked, .layout.switched { grid-template-columns: 1.35fr 1fr; }
+        .wide { grid-column: 1 / -1; }
+        .section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .section-heading h2 { margin: 0; }
+        .section-heading small { font-size: 11px; color: var(--text-secondary); }
+        .finance-cat-list li { cursor: default; }
+        .finance-cat-pct { color: var(--text-secondary) !important; }
+        .chart { height: 150px; padding-top: 10px; }
+        .chart svg { width: 100%; height: 110px; overflow: visible; }
+        .chart-dates { display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 10px; }
+        .chart-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+        .chart-label strong { float: right; font-weight: 500; color: var(--accent); }
+        .category-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+        .category-tabs button { padding: 9px 16px; }
+        .category-tabs .selected { background: var(--panel); color: var(--text); border-color: var(--accent); }
+        .stack-gap { margin-top: 26px; }
+        .switcher {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20;
+            display: flex; gap: 5px; align-items: center; padding: 8px;
+            background: #16241bf5; border: 1px solid var(--border-strong); border-radius: 14px;
+            box-shadow: 0 12px 48px #0008; max-width: calc(100% - 24px);
+        }
+        .switcher span { padding: 0 10px; color: var(--text-secondary); font-size: 11px; white-space: nowrap; }
+        .switcher button { white-space: nowrap; font-size: 12px; }
+        .switcher .selected { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+        button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+        .finance-ledger-row { pointer-events: none; }
+        .demo-hint { color: var(--text-secondary); font-size: 11px; margin: 12px 0 0; }
+        @media (max-width: 760px) {
+            body { padding: 20px 16px 170px; }
+            .layout.paired, .layout.stacked, .layout.switched { grid-template-columns: 1fr; }
+            .finance-stat-value { font-size: 16px; }
+            .finance-stat { padding: 12px 10px; }
+            .switcher { flex-wrap: wrap; width: max-content; justify-content: center; bottom: 12px; }
+            .switcher span { width: 100%; text-align: center; padding: 2px; }
+            .period { gap: 10px; flex-wrap: wrap; }
+            .finance-cat-right { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <aside class="mockup-note">
+        <span class="mockup-label">Макет · условные данные · не подключён к приложению</span>
+        <p id="variant-description"></p>
+    </aside>
+    <header id="app-header">
+        <div class="header">
+            <div>
+                <h1>Pine &amp; Ember</h1>
+                <nav class="tabs" aria-label="Разделы приложения">
+                    <span class="tab">Доска</span>
+                    <span class="tab">База знаний</span>
+                    <span class="tab active">Финансы</span>
+                </nav>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="period">
+            <small>1–30 ноября 2026</small>
+            <div class="range-control" aria-label="Период в макете">
+                <span class="range-btn active">Месяц</span>
+                <span class="range-btn">30 дней</span>
+                <span class="range-btn">Диапазон…</span>
+            </div>
+        </div>
+        <section class="finance-panel-card" aria-label="Образец формы ввода">
+            <h2 class="finance-section-title">Новая операция</h2>
+            <div class="finance-ledger-row" inert>
+                <div class="finance-ledger-field finance-ledger-radio">
+                    <span>Тип</span>
+                    <div class="finance-ledger-radio-options">
+                        <label><input type="radio" name="kind" checked> расход</label>
+                        <label><input type="radio" name="kind"> доход</label>
+                    </div>
+                </div>
+                <label class="finance-ledger-field finance-ledger-grow">
+                    <span>Категория</span><select><option>Продукты</option></select>
+                </label>
+                <label class="finance-ledger-field finance-ledger-grow">
+                    <span>Описание</span><input type="text" placeholder="Например: продукты на неделю">
+                </label>
+                <label class="finance-ledger-field finance-ledger-amount">
+                    <span>Сумма</span><input type="number" class="mono" placeholder="0">
+                </label>
+                <div class="finance-ledger-field finance-ledger-radio">
+                    <span>Валюта</span>
+                    <div class="finance-ledger-radio-options">
+                        <label><input type="radio" name="currency" checked> RUB</label>
+                        <label><input type="radio" name="currency"> BYN</label>
+                    </div>
+                </div>
+                <label class="finance-ledger-field"><span>Дата</span><input type="date" value="2026-11-04"></label>
+                <button class="btn primary finance-ledger-submit" type="button">Добавить</button>
+            </div>
+        </section>
+        <div class="finance-totals">
+            <div class="finance-stat income">
+                <span class="finance-stat-label">Доходы</span><strong class="finance-stat-value">180 000 ₽</strong>
+            </div>
+            <div class="finance-stat expense">
+                <span class="finance-stat-label">Расходы</span><strong class="finance-stat-value">108 000 ₽</strong>
+            </div>
+            <div class="finance-stat balance">
+                <span class="finance-stat-label">Баланс</span><strong class="finance-stat-value">72 000 ₽</strong>
+            </div>
+        </div>
+        <div id="layout" class="layout paired"></div>
+        <p class="demo-hint">Форма и категории показаны только для оценки внешнего вида. Работают переключатели макетов.</p>
+    </main>
+    <nav class="switcher" aria-label="Варианты расположения блока доходов">
+        <span>Вариант</span>
+        <button class="btn" data-variant="a" type="button">А · Рядом</button>
+        <button class="btn" data-variant="b" type="button">Б · Друг под другом</button>
+        <button class="btn" data-variant="c" type="button">В · Переключатель</button>
+    </nav>
+    <script>
+        const expenses = [
+            ['Жильё', 45000, '#FF9E64'],
+            ['Продукты', 27000, '#FFB454'],
+            ['Кафе и рестораны', 18000, '#7FA37B'],
+            ['Транспорт', 10800, '#5FA88E'],
+            ['Подписки', 7200, '#E8A87C'],
+        ];
+        const income = [
+            ['Зарплата', 144000, '#8FB89A'],
+            ['Подработка', 27000, '#5FA88E'],
+            ['Проценты по вкладу', 9000, '#B2C49A'],
+        ];
+        const descriptions = {
+            a: 'А · Доходы и расходы рядом. Оба списка видны сразу, график баланса — ниже на всю ширину.',
+            b: 'Б · Доходы под расходами. Сохраняем текущие две колонки: категории слева, график справа.',
+            c: 'В · Один список с переключателем. Экран компактнее, но доходы и расходы нельзя увидеть одновременно.',
+        };
+        const rub = amount => new Intl.NumberFormat('ru-RU').format(amount) + ' ₽';
+        let categoryKind = 'income';
+        function categories(kind) {
+            const rows = kind === 'income' ? income : expenses;
+            const total = kind === 'income' ? 180000 : 108000;
+            const title = kind === 'income' ? 'Доходы по категориям' : 'Расходы по категориям';
+            return `<section aria-label="${title}">
+                <div class="section-heading">
+                    <h2 class="finance-section-title">${title}</h2>
+                    <small>${rows.length} ${rows.length === 3 ? 'категории' : 'категорий'}</small>
+                </div>
+                <ul class="finance-cat-list">${rows.map(([name, amount, color]) => {
+                    const pct = Math.round(amount / total * 100);
+                    return `<li style="--cat-color:${color}">
+                        <span class="finance-cat-name">${name}</span>
+                        <span class="finance-cat-right"><span class="finance-cat-pct">${pct}%</span>
+                            ${rub(amount)}</span>
+                        <div class="finance-cat-track">
+                            <div class="finance-cat-fill" style="width:${pct}%"></div>
+                        </div>
+                    </li>`;
+                }).join('')}</ul>
+            </section>`;
+        }
+        function chart(wide = false) {
+            return `<section class="${wide ? 'wide' : ''}" aria-label="График баланса">
+                <h2 class="finance-section-title">Баланс нарастающим итогом</h2>
+                <div class="finance-panel-card">
+                    <div class="chart-label">За выбранный период <strong class="mono">72 000 ₽</strong></div>
+                    <div class="chart">
+                        <svg viewBox="0 0 600 110" preserveAspectRatio="none" role="img"
+                            aria-label="Условный график: баланс за период увеличился до 72 тысяч рублей">
+                            <defs>
+                                <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+                                    <stop stop-color="#FF9E64" stop-opacity=".18"/>
+                                    <stop offset="1" stop-color="#FF9E64" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M0 20H600 M0 55H600 M0 90H600" stroke="#3D5A45" stroke-dasharray="3 5"/>
+                            <path d="M0 90L45 90L46 18L100 26L150 35L200 50L250 57L300 65L340 35L380 41
+                                L420 48L460 57L500 68L540 72L560 61L600 65V110H0Z" fill="url(#area)"/>
+                            <path d="M0 90L45 90L46 18L100 26L150 35L200 50L250 57L300 65L340 35L380 41
+                                L420 48L460 57L500 68L540 72L560 61L600 65" fill="none"
+                                stroke="#FF9E64" stroke-width="2" vector-effect="non-scaling-stroke"/>
+                            <circle cx="600" cy="65" r="3" fill="#FF9E64"/>
+                        </svg>
+                        <div class="chart-dates mono"><span>01 ноя</span><span>15 ноя</span><span>30 ноя</span></div>
+                    </div>
+                </div>
+            </section>`;
+        }
+        function render(variant) {
+            const layout = document.getElementById('layout');
+            layout.className = `layout ${{a: 'paired', b: 'stacked', c: 'switched'}[variant]}`;
+            document.getElementById('variant-description').textContent = descriptions[variant];
+            document.querySelectorAll('[data-variant]').forEach(button => {
+                const selected = button.dataset.variant === variant;
+                button.classList.toggle('selected', selected);
+                button.setAttribute('aria-pressed', String(selected));
+            });
+            if (variant === 'a') {
+                layout.innerHTML = categories('expense') + categories('income') + chart(true);
+            } else if (variant === 'b') {
+                layout.innerHTML = `<div>${categories('expense')}
+                    <div class="stack-gap">${categories('income')}</div></div>${chart()}`;
+            } else {
+                layout.innerHTML = `<div>
+                    <div class="category-tabs" role="group" aria-label="Тип категорий">
+                        <button class="btn ${categoryKind === 'expense' ? 'selected' : ''}"
+                            aria-pressed="${categoryKind === 'expense'}" data-kind="expense">Расходы</button>
+                        <button class="btn ${categoryKind === 'income' ? 'selected' : ''}"
+                            aria-pressed="${categoryKind === 'income'}" data-kind="income">Доходы</button>
+                    </div>${categories(categoryKind)}</div>${chart()}`;
+                layout.querySelectorAll('[data-kind]').forEach(button => {
+                    button.onclick = () => { categoryKind = button.dataset.kind; render('c'); };
+                });
+            }
+        }
+        document.querySelectorAll('[data-variant]').forEach(button => {
+            button.onclick = () => {
+                const url = new URL(location.href);
+                url.searchParams.set('variant', button.dataset.variant);
+                history.replaceState(null, '', url);
+                render(button.dataset.variant);
+            };
+        });
+        const initial = new URLSearchParams(location.search).get('variant');
+        render(Object.hasOwn(descriptions, initial) ? initial : 'a');
+    </script>
+</body>
+</html>

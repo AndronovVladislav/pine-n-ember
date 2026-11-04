@@ -1538,6 +1538,7 @@ function renderFinanceDashboard(data) {
     document.getElementById('finance-balance-total').textContent = formatRub(data.balance_rub);
 
     renderFinanceCategoryList('finance-expense-categories', data.expense_by_category, parseFloat(data.expense_total_rub));
+    renderFinanceCategoryList('finance-income-categories', data.income_by_category, parseFloat(data.income_total_rub));
     renderFinanceSparkline(data.balance_series);
 }
 

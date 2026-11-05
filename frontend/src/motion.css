@@ -1,0 +1,175 @@
+:root {
+  --motion-fast: 140ms;
+  --motion-panel: 180ms;
+  --motion-travel: 240ms;
+  --motion-ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.app-dialog[open] {
+  animation: dialog-enter var(--motion-panel) var(--motion-ease);
+}
+.app-dialog[open]::backdrop {
+  animation: backdrop-enter var(--motion-panel) ease-out;
+}
+.app-dialog[data-closing] {
+  animation: dialog-exit var(--motion-panel) ease-in forwards;
+}
+.app-dialog[data-closing]::backdrop {
+  animation: backdrop-enter var(--motion-panel) ease-in reverse forwards;
+}
+
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes dialog-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.page-stage {
+  animation: page-enter var(--motion-panel) var(--motion-ease);
+}
+@keyframes page-enter {
+  from {
+    opacity: 0.5;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sidebar nav a,
+.btn,
+.add-btn,
+.icon-button,
+.range-btn,
+.align-btn {
+  transition:
+    background-color var(--motion-fast) ease-out,
+    color var(--motion-fast) ease-out,
+    border-color var(--motion-fast) ease-out,
+    opacity var(--motion-fast) ease-out;
+}
+button:active:not(:disabled) {
+  filter: brightness(0.93);
+}
+.column.drag-over {
+  background-color: #284631;
+}
+.task-wrap {
+  z-index: 1;
+}
+.card.dragging {
+  opacity: 0.4;
+}
+.button-label {
+  display: inline-grid;
+  align-items: center;
+}
+.button-label > span {
+  grid-area: 1 / 1;
+  transition: opacity var(--motion-fast) ease-out;
+}
+.button-label > span[aria-hidden='true'] {
+  opacity: 0;
+}
+.button-label > span[aria-hidden='false'] {
+  opacity: 1;
+}
+
+.motion-value {
+  display: inline-block;
+  vertical-align: bottom;
+}
+.motion-value-track {
+  display: block;
+  position: relative;
+  overflow: clip;
+}
+.motion-value-track > span {
+  display: block;
+}
+.motion-value-previous {
+  position: absolute;
+  inset: 0;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 600px) {
+  .finance-page .page-heading p {
+    min-height: 2.8em;
+  }
+}
+.fin-overview,
+.fin-details {
+  transition: opacity var(--motion-fast) ease-out;
+}
+.fin-overview[aria-busy='true'],
+.fin-details[aria-busy='true'] {
+  opacity: 0.65;
+}
+.fin-category-track > span {
+  transform-origin: left;
+  animation: bar-enter var(--motion-travel) var(--motion-ease);
+  transition: width var(--motion-travel) var(--motion-ease);
+}
+@keyframes bar-enter {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.form-feedback {
+  min-height: 3.2em;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.form-feedback > p {
+  margin: 0;
+  animation: backdrop-enter var(--motion-fast) ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

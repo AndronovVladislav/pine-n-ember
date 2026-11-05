@@ -1,23 +1,90 @@
 # Pine & Ember
 
-Личный трекер задач. FastAPI + SQLAlchemy Core + Postgres.
+Личный трекер задач, база знаний и финансы. React + TypeScript, FastAPI + SQLAlchemy Core + Postgres.
 
 ## Запуск
 
 ```bash
 docker compose up -d db backup
 ./scripts/migrate.sh
+npm --prefix frontend ci
+npm --prefix frontend run build
 uv run uvicorn main:app --reload
 ```
 
 `.env.example` → `.env` для локальной конфигурации (`TRACKER_*`).
 
+Для сборки интерфейса нужен Node.js 22. В рабочем окружении FastAPI раздаёт готовый `frontend/dist/`;
+отдельный Node-сервер не нужен. После изменения исходников интерфейса повторите сборку.
+Без неё приложение откажется запускаться с инструкцией в сообщении об ошибке.
+HTML перепроверяется при открытии страницы; JS и CSS с хешем содержимого кешируются на год.
+Старый каталог `static/` больше не используется для раздачи.
+
+### Разработка интерфейса
+
+Запустите FastAPI на порту 8000, затем в другом терминале:
+
+```bash
+npm --prefix frontend run dev
+```
+
+Vite доступен на `http://127.0.0.1:5187` и направляет `/api` в FastAPI на порту 8000.
+Это настоящий API: для ручных тестовых записей запускайте backend с отдельной тестовой БД,
+а не с личными данными. Галерея `design/redesign-mockups/` не входит в рабочую сборку.
+
 ## Тесты
 
-Тесты и линтер гоняются только через `scripts/run_tests.sh` (ruff check + pytest), не по отдельности.
+Перед проверками соберите интерфейс. Ruff и pytest запускаются напрямую:
 
-Гоняются против отдельного сервиса `test-db` (см. `docker-compose.yml` и `pyproject.toml` →
-`[tool.pytest_env]`) — нужно поднять его перед прогоном: `docker compose up -d test-db`.
+```bash
+uv run ruff check .
+uv run pytest tests/ -q
+npm --prefix frontend run typecheck
+npm --prefix frontend test
+```
+
+Pytest использует сервис `test-db` (см. `docker-compose.yml` и `[tool.pytest_env]` в `pyproject.toml`).
+Поднимите его заранее: `docker compose up -d test-db`.
+**Pytest очищает выбранную базу: никогда не направляйте его на пользовательскую БД.**
+Для другого адреса отдельной тестовой БД задайте `TRACKER_DATABASE_URL` и отключите подмену из pytest-env:
+`uv run pytest -p no:env tests/ -q`.
+
+Браузерные тесты требуют установленного Google Chrome (`npx playwright-core install chrome` из `frontend/`).
+Они сами запускают preview на порту 5191, подставляют ответы API и не обращаются к реальной БД.
+Рабочий Vite на порту 5187 останавливать не нужно. Не запускайте браузерные наборы параллельно:
+они используют один тестовый порт.
+
+Проверки анимаций запускаются также через pytest, без БД:
+
+```bash
+uv run pytest tests/frontend/test_interface_motion.py --confcutdir=tests/frontend -q
+```
+
+Они проверяют диалоги, карточки, финансовые значения, прерывание переходов и уменьшение движения
+на ширине 1440 и 390 px. Для сохранения промежуточных кадров выполните из `frontend/`:
+
+```bash
+MOTION_CAPTURE=1 node tests/motion.mjs board
+MOTION_CAPTURE=1 node tests/motion.mjs finance
+```
+
+Кадры сохраняются в игнорируемом `frontend/shots/`. Эффекты рабочего интерфейса реализованы
+через CSS и Web Animations API, без демонстрационных компонентов Stageshow и новых зависимостей.
+
+### Интеграция с настоящим API
+
+Создайте отдельную локальную БД с именем `react_e2e` и примените к ней миграции, явно задав
+`TRACKER_DATABASE_URL`. Затем с тем же адресом БД запустите из `frontend/`:
+
+```bash
+TEST_PYTHON=.venv/bin/python npm run test:integration
+```
+
+Путь `TEST_PYTHON` вычисляется от корня репозитория. Скрипт сам запускает и останавливает FastAPI
+на порту 8017; занятый порт или другое имя БД блокируют запуск. Он создаёт собственные записи
+с уникальными именами, не очищает существующие таблицы и сохраняет снимки в `frontend/shots/`.
+На повторных прогонах тестовые записи накапливаются. Эта БД должна использоваться только для проверки.
+В CI она создаётся отдельно от базы pytest.
 
 ## Миграции
 

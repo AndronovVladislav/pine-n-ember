@@ -6,3 +6,4 @@ tracker.db
 backups/
 /.DS_Store
 /.playwright-mcp/
+/design/redesign-mockups/
